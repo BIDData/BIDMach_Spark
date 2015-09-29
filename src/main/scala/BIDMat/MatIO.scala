@@ -8,7 +8,6 @@ import java.io.DataInput
 
 class MatIO extends Writable {
   
-  // include implicit empty constructor
   var contents : Mat = null
   
   def mat = contents
@@ -36,9 +35,9 @@ class NDIO extends Writable {
   // include implicit empty constructor
   var contents : ND = null
   
-  def mat = contents
-  def mat_=(m: ND) {
-  contents = m
+  def nd = contents
+  def nd_=(m: ND) {
+	  contents = m
   }
 
   override def write(out: DataOutput):Unit = {

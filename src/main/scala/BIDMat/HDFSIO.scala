@@ -35,7 +35,7 @@ object HDFSIO {
      val value = new NDIO;
      reader.next(key, value);
      IOUtils.closeStream(reader);
-     value.mat;
+     value.nd;
   }
   
   def writeMat(fname:String, mat:Mat):Mat = {
@@ -68,7 +68,7 @@ object HDFSIO {
      val key = new IntWritable;
      key.set(0);
      val value = new NDIO;
-     value.mat = mat;
+     value.nd = mat;
      var writer = SequenceFile.createWriter(conf, 
          Writer.file(path),
          Writer.keyClass(key.getClass()),
