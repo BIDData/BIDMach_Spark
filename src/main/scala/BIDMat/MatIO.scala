@@ -24,7 +24,7 @@ class MatIO extends Writable {
   override def readFields(in: DataInput):Unit = {
     val matType : Int = in.readInt();
     matType match {
-      case MatTypeTag.FMat => mat = HMat.loadFMat(in)
+      case MatTypeTag.FMat => mat = HMat.loadFMat(in, mat);
     }
   } 
   
