@@ -1,6 +1,5 @@
 package BIDMat
 
-
 import org.apache.hadoop.io.Writable
 import java.io.IOException
 import java.io.DataOutput

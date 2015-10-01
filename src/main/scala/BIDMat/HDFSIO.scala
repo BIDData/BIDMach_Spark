@@ -9,7 +9,7 @@ import org.apache.hadoop.io.SequenceFile.Reader;
 import org.apache.hadoop.io.SequenceFile.Writer;
 import org.apache.hadoop.io.SequenceFile.Metadata;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
 
@@ -27,60 +27,46 @@ class HDFSIO {
 	}
 
 	def readMat(fname:String, omat:Mat):Mat = {
-			val conf = new Configuration();
-			val path = new Path(fname);
-			var reader = new Reader(conf, Reader.file(path));
-			val key = new IntWritable;
-			val value = new MatIO;
-      value.mat = omat;
-			reader.next(key, value);
-			IOUtils.closeStream(reader);
-			value.mat;
+		val value = new MatIO;
+		value.mat = omat;
+		readThing(fname, value);
+		value.mat;
 	}
-
+	
 	def readND(fname:String, ond:ND):ND = {
-			val conf = new Configuration();
-			val path = new Path(fname);
-			var reader = new Reader(conf, Reader.file(path));
-			val key = new IntWritable;
-			val value = new NDIO;
-      value.nd = ond;
-			reader.next(key, value);
-			IOUtils.closeStream(reader);
-			value.nd;
+		val value = new NDIO;
+		value.nd = ond;
+		readThing(fname, value);
+		value.nd;
+	}
+	
+	def readThing(fname:String, value:Writable) = {
+		val conf = new Configuration();
+		val path = new Path(fname);
+		var reader = new Reader(conf, Reader.file(path));
+		val key = new Text;
+		reader.next(key, value);
+		IOUtils.closeStream(reader);
 	}
 
-	def writeMat(fname:String, mat:Mat, compress:java.lang.Integer):Mat = {
-			val conf = new Configuration();
-			val path = new Path(fname);
-			val codec = getCompressor(compress);
-			val key = new IntWritable;
-			key.set(0);
-			val value = new MatIO;
-			value.mat = mat;
-			var writer = SequenceFile.createWriter(conf, 
-					Writer.file(path),
-					Writer.keyClass(key.getClass()),
-					Writer.valueClass(value.getClass()),
-					Writer.compression(SequenceFile.CompressionType.BLOCK, codec));
-			/*         Writer.bufferSize(fs.getConf().getInt("io.file.buffer.size",4096)), 
-         Writer.blockSize(1073741824),
-         Writer.progressable(null),
-         Writer.metadata(new Metadata()));      */
-
-			writer.append(key, value);
-			IOUtils.closeStream(writer);
-			mat;
+	def writeMat(fname:String, mat:Mat, compress:java.lang.Integer) = {
+		val value = new MatIO;
+		value.mat = mat;
+		writeThing(fname, value, compress);
 	}
+	
+  def writeND(fname:String, mat:ND, compress:java.lang.Integer) = {
+		val value = new NDIO;
+		value.nd = mat;
+		writeThing(fname, value, compress);
+  }
 
-	def writeND(fname:String, mat:ND, compress:java.lang.Integer):ND = {
+	def writeThing(fname:String, value:Writable, compress:Int) = {
 		val conf = new Configuration();
 		val path = new Path(fname);
 		val codec = getCompressor(compress);
-		val key = new IntWritable;
-		key.set(0);
-		val value = new NDIO;
-		value.nd = mat;
+		val key = new Text;
+		key.set(fname);
 		var writer = SequenceFile.createWriter(conf, 
 				Writer.file(path),
 				Writer.keyClass(key.getClass()),
@@ -89,6 +75,5 @@ class HDFSIO {
 
 		writer.append(key, value);
 		IOUtils.closeStream(writer);
-		mat;
 	}
 }
