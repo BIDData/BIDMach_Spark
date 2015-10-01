@@ -30,8 +30,7 @@ class MatIO extends Writable {
 }
 
 class NDIO extends Writable {
-  
-  // include implicit empty constructor
+
   var contents : ND = null
   
   def nd = contents
