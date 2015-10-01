@@ -24,6 +24,7 @@ class HDFSIO {
 			case 1 => new GzipCodec();
 			case 2 => new BZip2Codec();
 			case 3 => new SnappyCodec();
+			case 4 => new Lz4Codec();
 			}
 	}
 
