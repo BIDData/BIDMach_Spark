@@ -2,6 +2,7 @@ package BIDMat;
 
 import java.io.File
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.SequenceFile;
@@ -43,7 +44,7 @@ class HDFSIO {
 	def readThing(fname:String, value:Writable) = {
 		val conf = new Configuration();
 		val path = new Path(fname);
-		var reader = new Reader(conf, Reader.file(path));
+		val reader = new Reader(conf, Reader.file(path));
 		val key = new Text;
 		reader.next(key, value);
 		IOUtils.closeStream(reader);
@@ -67,7 +68,7 @@ class HDFSIO {
 		val codec = getCompressor(compress);
 		val key = new Text;
 		key.set(fname);
-		var writer = SequenceFile.createWriter(conf, 
+		val writer = SequenceFile.createWriter(conf, 
 				Writer.file(path),
 				Writer.keyClass(key.getClass()),
 				Writer.valueClass(value.getClass()),
@@ -76,4 +77,32 @@ class HDFSIO {
 		writer.append(key, value);
 		IOUtils.closeStream(writer);
 	}
+  
+  // Append a list of sequence files into a single file
+  
+  def appendFiles(ifnames:List[String], oname:String, compress:Int) = {
+		val conf = new Configuration();
+		val opath = new Path(oname);
+		val codec = getCompressor(compress);
+		val key = new Text;
+		var writer:Writer = null;
+    var value:Writable = null;
+    for (ifname <- ifnames) {
+    	val ipath = new Path(ifname);
+    	val reader = new Reader(conf, Reader.file(ipath));
+      if (writer == null) {
+    	  value = ReflectionUtils.newInstance(reader.getValueClass(), conf).asInstanceOf[Writable];
+        writer = SequenceFile.createWriter(conf, 
+        		Writer.file(opath),
+        		Writer.keyClass(key.getClass()),
+        		Writer.valueClass(value.getClass()),
+        		Writer.compression(SequenceFile.CompressionType.BLOCK, codec));
+      }
+      while (reader.next(key, value)) {
+    	  writer.append(key, value);   
+      }
+      IOUtils.closeStream(reader); 
+    }
+    IOUtils.closeStream(writer); 
+  }
 }
