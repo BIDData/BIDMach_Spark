@@ -17,4 +17,8 @@ and then
 <pre>cd BIDMach_Spark
 ./sbt package</pre>
 
-will build <pre>BIDMatHDFS.jar</pre>
+will build <code>BIDMatHDFS.jar</code>. Copy this back to the BIDMat directory:
+
+<pre>cp BIDMatHDFS.jar ../BIDMat/lib</pre>
+
+and you should have HDFS access with BIDMat.
