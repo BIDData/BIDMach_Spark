@@ -35,16 +35,16 @@ The hadoop quickstart guides dont mention this but you need to set the hdfs conf
 <pre> 
 &lt;configuration&gt;
      &lt;property&gt;
-         <name>dfs.replication</name>
-         <value>1</value>
+         &lt;name&gt;dfs.replication&lt;/name&gt;
+         &lt;value&gt;1&lt;/value&gt;
      &lt;/property&gt;
      &lt;property&gt;
-         <name>dfs.name.dir</name>
-         <value>/data/hdfs/name</value>
+         &lt;name&gt;dfs.name.dir&lt;/name&gt;
+         &lt;value&gt;/data/hdfs/name&lt;/value&gt;
      &lt;/property&gt;
      &lt;property&gt;
-         <name>dfs.data.dir</name>
-         <value>/data/hdfs/data</value>
+         &lt;name>dfs.data.dir&lt;/name&gt;
+         &lt;value>/data/hdfs/data&lt;/value&gt;
      &lt;/property&gt;
 &lt;/configuration&gt;
 </pre>
