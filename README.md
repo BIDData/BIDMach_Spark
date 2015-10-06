@@ -3,7 +3,7 @@ Code to allow running BIDMach on Spark including HDFS integration and lightweigh
 
 <h3>Dependencies</h3>
 
-This repo depends on BIDMat, and also on lz4 and hadoop. Assuming you've built a working BIDMat jar, copy these files into the lib directory of this repo. i.e.
+This repo depends on BIDMat, and also on lz4 and hadoop. Assuming you have hadoop installed and working, and that you've built a working BIDMat jar, copy these files into the lib directory of this repo. i.e.
 
 <pre>cp BIDMat/BIDMat.jar BIDMach_Spark/lib
 cp BIDMat/lib/lz4-*.*.jar BIDMach_Spark/lib</pre>
