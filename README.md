@@ -17,8 +17,16 @@ and then
 <pre>cd BIDMach_Spark
 ./sbt package</pre>
 
-will build <code>BIDMatHDFS.jar</code>. Copy this back to the BIDMat directory:
+will build <code>BIDMatHDFS.jar</code>. Copy this back to the BIDMat lib directory:
 
 <pre>cp BIDMatHDFS.jar ../BIDMat/lib</pre>
 
-and you should have HDFS access with BIDMat.
+Make sure $HADOOP_HOME is set to the hadoop home directory (usually /use/local/hadoop), and make sure hdfs is running:
+<pre>$HADOOP_HOME/sbin/start-dfs.sh</pre>
+Then you should have HDFS access with BIDMat by invoking 
+<pre>BIDMat/bidmath</pre>
+
+<pre>saveFMat("hdfs://localhost:9000/filename.fmat")</pre> or
+<pre>saveFMat("hdfs://filename.fmat")</pre>
+
+
