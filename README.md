@@ -29,4 +29,24 @@ Then you should have HDFS access with BIDMat by invoking
 <pre>saveFMat("hdfs://localhost:9000/filename.fmat")</pre> or
 <pre>saveFMat("hdfs://filename.fmat")</pre>
 
+<h3>Hadoop Config</h3>
+The hadoop quickstart guides dont mention this but you need to set the hdfs config to point to a persistent set of directories to hold the HDFS data. Here's a typical hdfs-site.xml:
+
+<pre> 
+<configuration>
+     <property>
+         <name>dfs.replication</name>
+         <value>1</value>
+     </property>
+     <property>
+         <name>dfs.name.dir</name>
+         <value>/data/hdfs/name</value>
+     </property>
+     <property>
+         <name>dfs.data.dir</name>
+         <value>/data/hdfs/data</value>
+     </property>
+</configuration>
+</pre>
+
 
