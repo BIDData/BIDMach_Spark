@@ -11,12 +11,15 @@ class MatIO extends Writable {
   
   def mat = contents
   def mat_=(m: Mat) {
-	contents = m
+    contents = m
   }
 
   override def write(out: DataOutput):Unit = {
     contents match {
       case fM:FMat => {out.writeInt(MatTypeTag.FMat); HMat.saveFMat(out, fM);}
+      case iM:IMat => {out.writeInt(MatTypeTag.IMat); HMat.saveIMat(out, iM);}
+      case lM:LMat => {out.writeInt(MatTypeTag.LMat); HMat.saveLMat(out, lM);}
+      case dM:DMat => {out.writeInt(MatTypeTag.DMat); HMat.saveDMat(out, dM);}
     }
   }
   
@@ -24,6 +27,9 @@ class MatIO extends Writable {
     val matType : Int = in.readInt();
     matType match {
       case MatTypeTag.FMat => mat = HMat.loadFMat(in, mat);
+      case MatTypeTag.IMat => mat = HMat.loadIMat(in, mat);
+      case MatTypeTag.LMat => mat = HMat.loadLMat(in, mat);
+      case MatTypeTag.DMat => mat = HMat.loadDMat(in, mat);
     }
   } 
   
