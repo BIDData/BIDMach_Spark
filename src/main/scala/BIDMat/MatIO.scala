@@ -20,6 +20,10 @@ class MatIO extends Writable {
       case iM:IMat => {out.writeInt(MatTypeTag.IMat); HMat.saveIMat(out, iM);}
       case lM:LMat => {out.writeInt(MatTypeTag.LMat); HMat.saveLMat(out, lM);}
       case dM:DMat => {out.writeInt(MatTypeTag.DMat); HMat.saveDMat(out, dM);}
+      case sM:SMat => {out.writeInt(MatTypeTag.SMat); HMat.saveSMat(out, sM);}
+      case sdM:SDMat => {out.writeInt(MatTypeTag.SDMat); HMat.saveSDMat(out, sdM);}
+      case sbM:SBMat => {out.writeInt(MatTypeTag.SBMat); HMat.saveSBMat(out, sbM);}
+      case csM:CSMat => {out.writeInt(MatTypeTag.CSMat); HMat.saveCSMat(out, csM);}
     }
   }
   
@@ -30,6 +34,10 @@ class MatIO extends Writable {
       case MatTypeTag.IMat => mat = HMat.loadIMat(in, mat);
       case MatTypeTag.LMat => mat = HMat.loadLMat(in, mat);
       case MatTypeTag.DMat => mat = HMat.loadDMat(in, mat);
+      case MatTypeTag.SMat => mat = HMat.loadSMat(in, mat);
+      case MatTypeTag.SDMat => mat = HMat.loadSDMat(in, mat);
+      case MatTypeTag.SBMat => mat = HMat.loadSBMat(in, mat);
+      case MatTypeTag.CSMat => mat = HMat.loadCSMat(in, mat);
     }
   } 
   
