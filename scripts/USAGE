@@ -1,0 +1,39 @@
+# Save the file spark_ec2.py in the ec2 subdirectoyr of your spark directory. 
+# Rename the old version..
+
+# From a unix shell, first define your EC2 credentials (from the csv you received). 
+# You should quote these since they often contain non-alpha characters.
+
+export AWS_ACCESS_KEY_ID=""
+export AWS_SECRET_ACCESS_KEY=""
+
+# to start the cluster, from spark/ec2 do:
+
+./spark-ec2 --region=us-west-2 start bidcluster3
+
+# then you can log into the master after putting the new rsa credentials somewhere and doing
+
+./spark-ec2 -i <rsa_private_filename> --region=us-west-2 login bidcluster3
+
+# on the master you will be logged in as root. Its a good idea to do 
+
+export AWS_ACCESS_KEY_ID=""
+export AWS_SECRET_ACCESS_KEY=""
+ 
+# on the master as well. Its not required for normal spark queries but you will need it, e.g.
+# to access Amazon s3. 
+
+# The spark directory is in ~/spark from the root account. 
+# cd to it, and then do:
+
+bin/spark-shell
+
+# to start an interactive spark shell. 
+
+# log out from the master when you are done. 
+
+
+# to stop the cluster
+
+./spark-ec2 --region=us-west-2 stop bidcluster3
+
