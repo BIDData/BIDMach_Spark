@@ -787,6 +787,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key, copyfil
     opts.user = tmpuser
     if deploy_ssh_key:
         print("Generating cluster's SSH key on master...")
+        ssh(master, opts, """rm -f /root/.ssh/id_rsa""")
         key_setup = """
             (ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa &&
              cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys)
@@ -809,7 +810,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key, copyfil
         modules = ['spark', 'ephemeral-hdfs', 'persistent-hdfs',
                    'mapreduce', 'spark-standalone', 'tachyon', 'rstudio']
     else:
-        modules = []
+        modules = ['spark-standalone']
 
 
     if opts.hadoop_major_version == "1":
@@ -834,7 +835,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key, copyfil
             + " && "
             + "git clone {r} -b {b} spark-ec2".format(r=opts.spark_ec2_git_repo,
                                                       b=opts.spark_ec2_git_branch)
-            )
+        )
 
     print("Deploying config files to master...")
     deploy_files(
@@ -846,14 +847,13 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key, copyfil
         modules=modules
     )
 
-    if (copyfiles):
-        if opts.deploy_root_dir is not None:
-            print("Deploying {s} to master...".format(s=opts.deploy_root_dir))
-            deploy_user_files(
-                root_dir=opts.deploy_root_dir,
-                opts=opts,
-                master_nodes=master_nodes
-                )
+    if opts.deploy_root_dir is not None:
+        print("Deploying {s} to master...".format(s=opts.deploy_root_dir))
+        deploy_user_files(
+            root_dir=opts.deploy_root_dir,
+            opts=opts,
+            master_nodes=master_nodes
+        )
 
     print("Running setup on master...")
     setup_spark_cluster(master, opts, copyfiles)
@@ -1121,7 +1121,7 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
     ]
     subprocess.check_call(command)
     # Remove the temp directory we created above
-    shutil.rmtree(tmp_dir)
+#    shutil.rmtree(tmp_dir)
 
 
 # Deploy a given local directory to a cluster, WITHOUT parameter substitution.
