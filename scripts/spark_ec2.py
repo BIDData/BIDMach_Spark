@@ -810,7 +810,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key, copyfil
         modules = ['spark', 'ephemeral-hdfs', 'persistent-hdfs',
                    'mapreduce', 'spark-standalone', 'tachyon', 'rstudio']
     else:
-        modules = ['spark-standalone']
+        modules = ['spark-standalone', 'ephemeral-hdfs', 'persistent-hdfs']
 
 
     if opts.hadoop_major_version == "1":
