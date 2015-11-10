@@ -62,9 +62,12 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone):
 
     ucommand="cat /usr/local/hadoop/etc/hadoop/core-site.xml | sed s+hdfs:.*:9000+hdfs://%s:9000+ > /usr/local/hadoop/etc/hadoop/core-site.tmp" % master
     ssh(master, opts, ucommand.encode('ascii','ignore'))
-
     ucommand="mv  /usr/local/hadoop/etc/hadoop/core-site.tmp /usr/local/hadoop/etc/hadoop/core-site.xml"
     ssh(master, opts, ucommand.encode('ascii','ignore'))
+
+    ssh(master, opts, """rm -f ~/.ssh/known_hosts""")
+    for slave in slave_names:
+            ssh(slave, opts, """rm -f ~/.ssh/known_hosts""")
 
     if (genkeys):
         print("Generating cluster's SSH key on master...")
@@ -74,12 +77,10 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone):
              cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys)
         """
         ssh(master, opts, key_setup)
-        ssh(master, opts, """rm -f ~/.ssh/known_hosts""")
         dot_ssh_tar = ssh_read(master, opts, ['tar', 'c', '.ssh'])
         print("Transferring cluster's SSH key to slaves...")
         for slave in slave_names:
             ssh_write(slave, opts, ['tar', 'x'], dot_ssh_tar)
-            ssh(slave, opts, """rm -f ~/.ssh/known_hosts""")
 
 
     
