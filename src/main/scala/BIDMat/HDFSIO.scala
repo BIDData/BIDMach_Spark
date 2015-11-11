@@ -34,6 +34,13 @@ class HDFSIO {
 		readThing(fname, value);
 		value.mat;
 	}
+  
+  def readMats(fname:String, omats:Array[Mat]):Mat = {
+    val value = new MatIO;
+    value.mats = omats;
+    readThing(fname, value);
+    value.mat;
+  }
 	
 	def readND(fname:String, ond:ND):ND = {
 		val value = new NDIO;
@@ -56,7 +63,13 @@ class HDFSIO {
 		value.mat = mat;
 		writeThing(fname, value, compress);
 	}
-	
+  
+  def writeMats(fname:String, mats:Array[Mat], compress:java.lang.Integer) = {
+    val value = new MatIO;
+    value.mats = mats;
+    writeThing(fname, value, compress);
+  }
+
   def writeND(fname:String, mat:ND, compress:java.lang.Integer) = {
 		val value = new NDIO;
 		value.nd = mat;
