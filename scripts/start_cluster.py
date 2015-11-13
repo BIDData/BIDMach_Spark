@@ -21,8 +21,16 @@ class Options:
     identity_file = None
     private_ips = False
 
+core_site = """
+<configuration>
+    <property>
+        <name>fs.default.name</name>
+        <value>hdfs://%s:9000</value>
+    </property>
+</configuration>
+"""
 
-def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone):
+def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone, core_site=core_site):
     opts = Options();
     opts.user = "ec2-user"
     opts.identity_file = id_file
@@ -51,23 +59,28 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone):
     )
 
     master = get_dns_name(masters[0], opts.private_ips);
+
+    print("configuring master %s" % master);
+
     slave_names = [get_dns_name(i, opts.private_ips) for i in slaves];
     slaves_string = reduce(lambda x,y : x + "\n" + y, slave_names);
     
-    ucommand="echo -e '%s' > /opt/spark/conf/slaves" % slaves_string
-    ssh(master, opts, ucommand.encode('ascii','ignore'))
+    hscommand="echo -e '%s' > /opt/spark/conf/slaves" % slaves_string
+    ssh(master, opts, hscommand.encode('ascii','ignore'))
 
-    ucommand="echo -e '%s' > /usr/local/hadoop/etc/hadoop/slaves" % slaves_string
-    ssh(master, opts, ucommand.encode('ascii','ignore'))
+    sscommand="echo -e '%s' > /usr/local/hadoop/etc/hadoop/slaves" % slaves_string
+    ssh(master, opts, sscommand.encode('ascii','ignore'))
 
-    ucommand="cat /usr/local/hadoop/etc/hadoop/core-site.xml | sed s+hdfs:.*:9000+hdfs://%s:9000+ > /usr/local/hadoop/etc/hadoop/core-site.tmp" % master
-    ssh(master, opts, ucommand.encode('ascii','ignore'))
-    ucommand="mv  /usr/local/hadoop/etc/hadoop/core-site.tmp /usr/local/hadoop/etc/hadoop/core-site.xml"
-    ssh(master, opts, ucommand.encode('ascii','ignore'))
+    core_conf = core_site % master
+    hccommand="echo '%s' >  /usr/local/hadoop/etc/hadoop/core-site.xml" % core_conf
+    ssh(master, opts, hccommand.encode('ascii','ignore'))
 
     ssh(master, opts, """rm -f ~/.ssh/known_hosts""")
     for slave in slave_names:
-            ssh(slave, opts, """rm -f ~/.ssh/known_hosts""")
+        print("configuring slave %s" % slave)
+        ssh(slave, opts, """rm -f ~/.ssh/known_hosts""")
+        ssh(slave, opts, hccommand.encode('ascii','ignore'))
+        ssh(slave, opts, sscommand.encode('ascii','ignore'))
 
     if (genkeys):
         print("Generating cluster's SSH key on master...")
