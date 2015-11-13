@@ -1,0 +1,6 @@
+
+// get the (private) IP addresses of the executors
+// makes a simple RDD which it distributes into nnodes partitions. These are then processed one each by the executors.
+
+val nnodes = 4
+val names = sc.parallelize(0 until nnodes, nnodes).map(i => java.net.InetAddress.getLocalHost.getHostAddress).collect
