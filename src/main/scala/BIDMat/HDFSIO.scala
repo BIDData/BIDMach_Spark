@@ -15,7 +15,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
 
 
-class HDFSIO {
+class HDFSIO extends HDFSIOtrait {
 
 	def getCompressor(compress:Int):CompressionCodec = {
 		import org.apache.hadoop.io.compress._;
@@ -35,11 +35,11 @@ class HDFSIO {
 		value.mat;
 	}
   
-  def readMats(fname:String, omats:Array[Mat]):Mat = {
+  def readMats(fname:String, omats:Array[Mat]):Array[Mat] = {
     val value = new MatIO;
     value.mats = omats;
     readThing(fname, value);
-    value.mat;
+    value.mats;
   }
 	
 	def readND(fname:String, ond:ND):ND = {
@@ -48,6 +48,13 @@ class HDFSIO {
 		readThing(fname, value);
 		value.nd;
 	}
+  
+  def readNDs(fname:String, ond:Array[ND]):Array[ND] = {
+    val value = new NDIO;
+    value.nds = ond;
+    readThing(fname, value);
+    value.nds;
+  }
 	
 	def readThing(fname:String, value:Writable) = {
 		val conf = new Configuration();
@@ -58,22 +65,28 @@ class HDFSIO {
 		IOUtils.closeStream(reader);
 	}
 
-	def writeMat(fname:String, mat:Mat, compress:java.lang.Integer) = {
+	def writeMat(fname:String, mat:Mat, compress:Int) = {
 		val value = new MatIO;
 		value.mat = mat;
 		writeThing(fname, value, compress);
 	}
   
-  def writeMats(fname:String, mats:Array[Mat], compress:java.lang.Integer) = {
+  def writeMats(fname:String, mats:Array[Mat], compress:Int) = {
     val value = new MatIO;
     value.mats = mats;
     writeThing(fname, value, compress);
   }
 
-  def writeND(fname:String, mat:ND, compress:java.lang.Integer) = {
+  def writeND(fname:String, mat:ND, compress:Int) = {
 		val value = new NDIO;
 		value.nd = mat;
 		writeThing(fname, value, compress);
+  }
+  
+  def writeNDs(fname:String, mats:Array[ND], compress:Int) = {
+    val value = new NDIO;
+    value.nds = mats;
+    writeThing(fname, value, compress);
   }
 
 	def writeThing(fname:String, value:Writable, compress:Int) = {

@@ -59,26 +59,42 @@ class MatIO extends Writable {
 
 class NDIO extends Writable {
   
-  var contents : ND = null
+  var nds : Array[ND] = null;
+  def nd = nds(0);
+  def nd_=(m:ND) = {
+    if (nds == null) {
+      nds = new Array[ND](1);
+    }
+    nds(0) = m;
+  }
   
-  def nd = contents
-  def nd_=(m: ND) {
-	  contents = m
+  def mknds(n:Int) = {
+    if (nds == null || nds.length != n) {
+      nds = new Array[ND](n);
+    }
   }
 
   override def write(out: DataOutput):Unit = {
-    contents match {
-      case _ => throw new RuntimeException("NDwrite: type not matched");
+	  out.writeInt(nds.length);
+	  for (i <- 0 until nds.length) {
+		  nds(i) match {
+		  case fM:FND => {out.writeInt(MatTypeTag.FND); HMat.saveFND(out, fM);}
+		  case _ => throw new RuntimeException("NDwrite: type not matched");
+		  }
     }
   }
   
   override def readFields(in: DataInput):Unit = {
-    val matType : Int = in.readInt();
-    matType match {
+    val nnds : Int = in.readInt();
+    nds = new Array[ND](nnds);
+    for (i <- 0 until nnds) {
+    	val matType : Int = in.readInt();
+      matType match {
+      case MatTypeTag.FND => nds(i) = HMat.loadFND(in, nds(i));
       case _ => throw new RuntimeException("NDread: type not matched");
-    }
-  } 
-  
+      }
+    } 
+  }
 }
 
 object MatTypeTag {
@@ -94,4 +110,5 @@ object MatTypeTag {
   final val SBMatX = 301;
   final val CSMat = 202;
   final val CSMatX = 302;
+  final val FND = 630;
 }
