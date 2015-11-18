@@ -5,10 +5,12 @@ import java.io.IOException
 import java.io.DataOutput
 import java.io.DataInput
 
-class MatIO extends Writable {
+class MatIO extends Writable with MatIOtrait {
   
   var mats : Array[Mat] = null;
   def mat = mats(0);
+  def len = mats.length
+  def get:Array[Mat] = mats
   def mat_=(m:Mat) = {
     if (mats == null) {
       mats = new Array[Mat](1);
