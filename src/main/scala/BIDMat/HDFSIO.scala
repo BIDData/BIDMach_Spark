@@ -14,6 +14,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
 
+class SerText extends Text with Serializable {}
 
 class HDFSIO extends HDFSIOtrait {
 
@@ -60,7 +61,7 @@ class HDFSIO extends HDFSIOtrait {
 		val conf = new Configuration();
 		val path = new Path(fname);
 		val reader = new Reader(conf, Reader.file(path));
-		val key = new Text;
+		val key = new SerText;
 		reader.next(key, value);
 		IOUtils.closeStream(reader);
 	}
@@ -93,7 +94,7 @@ class HDFSIO extends HDFSIOtrait {
 		val conf = new Configuration();
 		val path = new Path(fname);
 		val codec = getCompressor(compress);
-		val key = new Text;
+		val key = new SerText;
 		key.set(fname);
 		val writer = SequenceFile.createWriter(conf, 
 				Writer.file(path),
@@ -111,7 +112,7 @@ class HDFSIO extends HDFSIOtrait {
 		val conf = new Configuration();
 		val opath = new Path(oname);
 		val codec = getCompressor(compress);
-		val key = new Text;
+		val key = new SerText;
 		var writer:Writer = null;
     var value:Writable = null;
     for (ifname <- ifnames) {
