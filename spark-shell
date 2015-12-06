@@ -1,0 +1,11 @@
+#!/bin/bash
+# export JAVA_HOME="" # Set here if not set in environment
+# export CUDA_PATH="" # Set here if not set in environment
+# export SPARK_HOME="" # Set here if not set in environment
+BIDMACH_HOME=/opt/BIDMach # Set here if not set in environment
+
+JCUDA_VERSION="0.7.0a" # Fix if needed
+
+BIDMACH_JARS=$(find ${BIDMACH_HOME}| grep '\.jar' | grep -vE 'IScala.jar|jline.*\.jar' | tr '\n' ',')
+
+${SPARK_HOME}/bin/spark-shell --master spark://${HOSTNAME}:7077 --jars ${BIDMACH_JARS} --executor-memory 10G --driver-memory 8G

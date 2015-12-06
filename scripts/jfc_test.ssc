@@ -1,0 +1,49 @@
+
+import org.apache.spark.rdd.RDD
+import scala.reflect.ClassTag
+import BIDMat.MatIO
+import BIDMat.SerText
+import BIDMat.MatFunctions._
+import BIDMat.SciFunctions._
+
+class CatIterator[T](iters: Iterator[T]*) extends Iterator[T] {
+    val iterators = iters.toArray;
+    var thisiter = 0;                         // points to the first iterator that hasnt run out yet
+    def hasNext:Boolean = {
+	while (thisiter < iterators.length && ! iterators(thisiter).hasNext) thisiter += 1;
+	(thisiter < iterators.length);
+    }
+    def next = {
+	hasNext;
+	iterators(thisiter).next;
+    }
+}
+
+def repRDD[T: ClassTag](r:RDD[T], k:Int):RDD[T] = {
+    k match {
+    case 1 => r;
+    case 2 => r.zipPartitions(r)((iter1, iter2) => new CatIterator(iter1, iter2));
+    case 3 => r.zipPartitions(r,r)((i1, i2, i3) => new CatIterator(i1, i2, i3));
+    case 4 => r.zipPartitions(r,r,r)((i1, i2, i3, i4) => new CatIterator(i1, i2, i3, i4));
+    case _ => repRDD(r, k-3).zipPartitions(r,r,r)((i1, i2, i3, i4) => new CatIterator(i1, i2, i3, i4));
+    }
+}
+
+val master = java.net.InetAddress.getLocalHost.getHostAddress;
+
+val data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/merged.fmat.lz4".format(master), classOf[SerText], classOf[MatIO]);
+
+tic; val count1 = data.count; val t1=toc;
+
+val parts = data.coalesce(4);
+
+
+parts.cache;
+
+tic; val count2 = parts.count; val t2=toc;
+
+tic; val count3 = parts.map{case (k,v)=> BIDMat.SciFunctions.sum(BIDMat.FMat(v.mat)(?))}.collect; val t3=toc;
+
+val parts2 = repRDD(parts, 2);
+
+tic; val count4 = parts2.map{case (k,v)=> BIDMat.SciFunctions.sum(BIDMat.FMat(v.mat)(?))}.collect; val t4=toc;
