@@ -29,7 +29,7 @@ def repRDD[T: ClassTag](r:RDD[T], k:Int):RDD[T] = {
     }
 }
 
-val master = java.net.InetAddress.getLocalHost.getHostAddress;
+val master = "localhost"
 
 val data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/merged.fmat.lz4".format(master), classOf[SerText], classOf[MatIO]);
 

@@ -1,0 +1,8 @@
+import BIDMat.MatIO
+import BIDMat.SerText
+
+for (i <- 0 to 80) {
+    val fname = "alls%02d.fmat.lz4" format i;
+    val a =loadFMat("/code/BIDMach/data/MNIST8M/parts/" + fname);
+    saveFMat("hdfs://localhost:9000/BIDMach_MNIST/parts/" + fname, a, 2);
+}
