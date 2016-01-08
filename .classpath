@@ -2,6 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src/main/scala/BIDMat"/>
 	<classpathentry kind="lib" path="lib/BIDMat.jar"/>
+	<classpathentry kind="lib" path="lib/BIDMach.jar"/>
 	<classpathentry kind="lib" path="lib/sbt-launch.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>

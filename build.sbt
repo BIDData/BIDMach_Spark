@@ -20,6 +20,8 @@ libraryDependencies <<= (scalaVersion, libraryDependencies) { (sv, deps) =>
   deps :+ ("org.scala-lang" % "scala-compiler" % sv)
 }
 
+libraryDependencies += "org.apache.spark" %% "spark-core" % "1.6.0"
+
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
 javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
