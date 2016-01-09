@@ -8,7 +8,7 @@ import org.apache.hadoop.io.Text;
 
 import scala.reflect.ClassTag
 
-class RunOnSpark{
+object RunOnSpark{
   def firstPass(learner: Learner)(rdd_data:Iterator[(SerText, BIDMat.MatIO)]):Iterator[Learner] = {
     learner.firstPass(rdd_data)
     Iterator(learner)
@@ -26,11 +26,12 @@ class RunOnSpark{
     Iterator(learner)
   }
 
-  def runOnSpark(learner:Learner, rdd_data:RDD[(SerText,MatIO)]) = {
+  def runOnSpark(learner:Learner, rdd_data:RDD[(SerText,MatIO)]):RDD[Learner] = {
     var rdd_learner: RDD[Learner] = rdd_data.mapPartitions[Learner](firstPass(learner), preservesPartitioning=true)
     for (i <- 1 to learner.opts.npasses) {
-    rdd_learner = rdd_data.zipPartitions(rdd_learner)(nextPass)
-  }
-    rdd_learner = rdd_learner.mapPartitions(wrapUpLearner)
+      rdd_learner = rdd_data.zipPartitions(rdd_learner, preservesPartitioning=true)(nextPass)
+    }
+    rdd_learner = rdd_learner.mapPartitions(wrapUpLearner, preservesPartitioning=true)
+    rdd_learner
   }
 }
