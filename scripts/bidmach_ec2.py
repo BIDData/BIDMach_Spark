@@ -19,6 +19,17 @@
 # limitations under the License.
 #
 
+# modified from spark-ec2.py
+#
+# What this script does: 
+# Launch (create and start) a cluster, start, stop and login to it. 
+# Does not install any software
+# Configures Spark and Hadoop installations on the Master and Slaves
+#
+# What this script assumes:
+#   Spark and Hadoop should be installed on the ec2 image
+#   Hadoop should be configured to run on port 9000 on the master
+
 from __future__ import division, print_function, with_statement
 
 import codecs
@@ -55,6 +66,10 @@ else:
 import boto
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType, EBSBlockDeviceType
 from boto import ec2
+
+
+spark_install_dir='/opt/spark'
+hadoop_install_dir='/usr/local/hadoop'
 
 
 core_site = """
@@ -641,14 +656,14 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key, copyfil
     slave_names = [get_dns_name(i, opts.private_ips) for i in slave_nodes];
     slaves_string = reduce(lambda x,y : x + "\n" + y, slave_names);
     
-    hscommand="echo -e '%s' > /opt/spark/conf/slaves" % slaves_string
+    hscommand="echo -e '%s' > %s/conf/slaves" % (slaves_string, spark_install_dir)
     ssh(master, opts, hscommand.encode('ascii','ignore'))
 
-    sscommand="echo -e '%s' > /usr/local/hadoop/etc/hadoop/slaves" % slaves_string
+    sscommand="echo -e '%s' > %s/etc/hadoop/slaves" % (slaves_string, hadoop_install_dir)
     ssh(master, opts, sscommand.encode('ascii','ignore'))
 
     core_conf = core_site % master
-    hccommand="echo '%s' >  /usr/local/hadoop/etc/hadoop/core-site.xml" % core_conf
+    hccommand="echo '%s' >  %s/etc/hadoop/core-site.xml" % (core_conf, hadoop_install_dir)
     ssh(master, opts, hccommand.encode('ascii','ignore'))
 
     ssh(master, opts, """rm -f ~/.ssh/known_hosts""")
@@ -823,87 +838,6 @@ def get_num_disks(instance_type):
         print("WARNING: Don't know number of disks on instance type %s; assuming 1"
               % instance_type, file=stderr)
         return 1
-
-
-# Deploy the configuration file templates in a given local directory to
-# a cluster, filling in any template parameters with information about the
-# cluster (e.g. lists of masters and slaves). Files are only deployed to
-# the first master instance in the cluster, and we expect the setup
-# script to be run on that instance to copy them to other nodes.
-#
-# root_dir should be an absolute path to the directory with the files we want to deploy.
-def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
-    active_master = get_dns_name(master_nodes[0], opts.private_ips)
-
-    num_disks = get_num_disks(opts.instance_type)
-    hdfs_data_dirs = "/mnt/ephemeral-hdfs/data"
-    mapred_local_dirs = "/mnt/hadoop/mrlocal"
-    spark_local_dirs = "/mnt/spark"
-    if num_disks > 1:
-        for i in range(2, num_disks + 1):
-            hdfs_data_dirs += ",/mnt%d/ephemeral-hdfs/data" % i
-            mapred_local_dirs += ",/mnt%d/hadoop/mrlocal" % i
-            spark_local_dirs += ",/mnt%d/spark" % i
-
-    cluster_url = "%s:7077" % active_master
-
-    master_addresses = [get_dns_name(i, opts.private_ips) for i in master_nodes]
-    slave_addresses = [get_dns_name(i, opts.private_ips) for i in slave_nodes]
-    worker_instances_str = "%d" % opts.worker_instances if opts.worker_instances else ""
-    template_vars = {
-        "master_list": '\n'.join(master_addresses),
-        "active_master": active_master,
-        "slave_list": '\n'.join(slave_addresses),
-        "cluster_url": cluster_url,
-        "hdfs_data_dirs": hdfs_data_dirs,
-        "mapred_local_dirs": mapred_local_dirs,
-        "spark_local_dirs": spark_local_dirs,
-        "swap": str(opts.swap),
-        "modules": '\n'.join(modules),
-        "spark_version": spark_v,
-        "tachyon_version": tachyon_v,
-        "hadoop_major_version": opts.hadoop_major_version,
-        "spark_worker_instances": worker_instances_str,
-        "spark_master_opts": opts.master_opts
-    }
-
-    if opts.copy_aws_credentials:
-        template_vars["aws_access_key_id"] = conn.aws_access_key_id
-        template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
-    else:
-        template_vars["aws_access_key_id"] = ""
-        template_vars["aws_secret_access_key"] = ""
-
-    # Create a temp directory in which we will place all the files to be
-    # deployed after we substitue template parameters in them
-    tmp_dir = tempfile.mkdtemp()
-    for path, dirs, files in os.walk(root_dir):
-        if path.find(".svn") == -1:
-            dest_dir = os.path.join('/', path[len(root_dir):])
-            local_dir = tmp_dir + dest_dir
-            if not os.path.exists(local_dir):
-                os.makedirs(local_dir)
-            for filename in files:
-                if filename[0] not in '#.~' and filename[-1] != '~':
-                    dest_file = os.path.join(dest_dir, filename)
-                    local_file = tmp_dir + dest_file
-                    with open(os.path.join(path, filename)) as src:
-                        with open(local_file, "w") as dest:
-                            text = src.read()
-                            for key in template_vars:
-                                text = text.replace("{{" + key + "}}", template_vars[key])
-                            dest.write(text)
-                            dest.close()
-    # rsync the whole directory over to the master machine
-    command = [
-        'rsync', '-rv',
-        '-e', stringify_command(ssh_command(opts)),
-        "%s/" % tmp_dir,
-        "%s@%s:/" % (opts.user, active_master)
-    ]
-    subprocess.check_call(command)
-    # Remove the temp directory we created above
-#    shutil.rmtree(tmp_dir)
 
 
 def stringify_command(parts):

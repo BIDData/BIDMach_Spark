@@ -2,14 +2,16 @@
 
 cd /code/BIDMach_Spark/scripts
 
-
-
 # launch a cluster
-./launch_cluster -k "dss2_rsa" -i /home/ec2-user/.ssh/dss2_rsa -a "ami-a6dc3bc6" -s 2 --instance-type=g2.2xlarge --region=us-west-2 launch bidcluster4
-
+python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa -a "ami-a6dc3bc6" -s 2 --instance-type=g2.2xlarge --region=us-west-2 launch bidcluster4
 
 # login to the master
-./launch_cluster -k "dss2_rsa" -i /home/ec2-user/.ssh/dss2_rsa --region=us-west-2 login bidcluster4
+python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa --region=us-west-2 login bidcluster4
+
+# start/stop the cluster
+python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa --region=us-west-2 start bidcluster3
+
+python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa --region=us-west-2 stop bidcluster4
 
 export AWS_ACCESS_KEY_ID=
 export AWS_SECRET_ACCESS_KEY=
@@ -19,6 +21,6 @@ spark/bin/spark-shell
 spark/bin/spark-shell --driver-memory 16g --conf "spark.driver.maxResultSize=8g"
 
 
-echo "y" | ./launch_cluster -k "dss2_rsa" -i /home/ec2-user/.ssh/dss2_rsa --region=us-west-2 destroy bidcluster4
+echo "y" | python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa --region=us-west-2 destroy bidcluster4
 
 
