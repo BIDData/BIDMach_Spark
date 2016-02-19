@@ -18,12 +18,12 @@ object RunOnSpark{
     Iterator[Learner](learner)
   }
 
-  // Instantiates a learner based on the model passed in and runs the first pass.
-  def firstPass(model: Model)(rdd_data:Iterator[(SerText, BIDMat.MatIO)]):Iterator[Learner] = {
+  // Instantiates a learner based on the parameters of the learner that is passed in and binds the data to the new learner.
+  def firstPass(l: Learner)(rdd_data:Iterator[(SerText, BIDMat.MatIO)]):Iterator[Learner] = {
     val i_opts = new IteratorSource.Options
     i_opts.iter = rdd_data
     val iteratorSource = new IteratorSource(i_opts)
-    val learner = new Learner(iteratorSource, model, null, new Batch(), null)
+    val learner = new Learner(iteratorSource, l.model, l.mixins, l.updater, l.datasink)
     learner.firstPass(rdd_data)
     Iterator[Learner](learner)
   }
@@ -47,9 +47,9 @@ object RunOnSpark{
     l
   }
 
-  def runOnSpark(sc: SparkContext, model:Model, rdd_data:RDD[(SerText,MatIO)], num_partitions: Int):RDD[Learner] = {
+  def runOnSpark(sc: SparkContext, learner:Learner, rdd_data:RDD[(SerText,MatIO)], num_partitions: Int):RDD[Learner] = {
     // Instantiate a learner, run the first pass, and reduce all of the learners' models into one learner.
-    var reduced_learner = rdd_data.mapPartitions[Learner](firstPass(model), preservesPartitioning=true)
+    var reduced_learner = rdd_data.mapPartitions[Learner](firstPass(learner), preservesPartitioning=true)
                                   .reduce(reduce_fn(0))
     // Once we've reduced our distributed learners into one learner, we can update our model.
     reduced_learner.updateM
@@ -60,7 +60,7 @@ object RunOnSpark{
                                       .mapPartitions[Learner](mapToLearner(reduced_learner), preservesPartitioning=true)
 
     // While we still have more passes to complete
-    for (i <- 1 until new Options().npasses) {
+    for (i <- 1 until learner.opts.npasses) {
       // Call nextPass on each learner and reduce the learners into one learner
       reduced_learner = rdd_data.zipPartitions(rdd_learner, preservesPartitioning=true)(nextPass)
                                 .reduce(reduce_fn(i))
