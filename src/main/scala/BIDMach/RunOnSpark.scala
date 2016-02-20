@@ -1,7 +1,7 @@
 package BIDMach
 
-import BIDMach.Learner.Options
 import BIDMach.datasources.IteratorSource
+import BIDMach.datasources.IteratorSource.{Options => IteratorOpts}
 import BIDMach.models.Model
 import BIDMach.updaters.Batch
 import BIDMat.{MatIO, SerText}
@@ -9,7 +9,6 @@ import BIDMat.SciFunctions._
 import org.apache.spark.rdd.RDD
 import org.apache.hadoop.io.Text;
 import org.apache.spark.SparkContext
-
 import scala.reflect.ClassTag
 
 object RunOnSpark{
@@ -24,7 +23,7 @@ object RunOnSpark{
     i_opts.iter = rdd_data
     val iteratorSource = new IteratorSource(i_opts)
     val learner = new Learner(iteratorSource, l.model, l.mixins, l.updater, l.datasink)
-    learner.firstPass(rdd_data)
+    learner.firstPass(null)
     Iterator[Learner](learner)
   }
 
