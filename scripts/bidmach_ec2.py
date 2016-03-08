@@ -405,6 +405,20 @@ def launch_cluster(conn, opts, cluster_name):
         slave_group.authorize('tcp', 50075, 50075, authorized_address)
         slave_group.authorize('tcp', 60060, 60060, authorized_address)
         slave_group.authorize('tcp', 60075, 60075, authorized_address)
+#Kylix
+        slave_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
+                               src_group=slave_group)
+        slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
+                               src_group=slave_group)
+        slave_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
+                               src_group=master_group
+        slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
+                               src_group=master_group)
+        master_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
+                               src_group=slave_group
+        master_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
+                               src_group=slave_group)
+
 
     # Check if instances are already running in our groups
     existing_masters, existing_slaves = get_existing_cluster(conn, opts, cluster_name,
