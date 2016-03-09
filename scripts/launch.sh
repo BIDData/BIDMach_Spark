@@ -3,7 +3,7 @@
 cd /code/BIDMach_Spark/scripts
 
 # launch a cluster
-python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa -a "ami-2d1ff04d" -s 2 --instance-type=g2.2xlarge --region=us-west-2 launch bidcluster4
+python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa -a "ami-2d1ff04d" -s 16 --instance-type=g2.2xlarge --region=us-west-2 launch bidcluster4
 
 # login to the master
 python bidmach_ec2.py -k "dss2_rsa" -i ~/.ssh/dss2_rsa --region=us-west-2 login bidcluster4

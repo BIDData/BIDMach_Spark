@@ -406,17 +406,17 @@ def launch_cluster(conn, opts, cluster_name):
         slave_group.authorize('tcp', 60060, 60060, authorized_address)
         slave_group.authorize('tcp', 60075, 60075, authorized_address)
 #Kylix
-        slave_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
+        slave_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50060,
                                src_group=slave_group)
-        slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
+        slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50060,
                                src_group=slave_group)
-        slave_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
+        slave_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50060,
                                src_group=master_group)
-        slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
+        slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50060,
                                src_group=master_group)
-        master_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
+        master_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50060,
                                src_group=slave_group)
-        master_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
+        master_group.authorize(ip_protocol='udp', from_port=50050, to_port=50060,
                                src_group=slave_group)
 
 
