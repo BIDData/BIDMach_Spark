@@ -411,11 +411,11 @@ def launch_cluster(conn, opts, cluster_name):
         slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
                                src_group=slave_group)
         slave_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
-                               src_group=master_group
+                               src_group=master_group)
         slave_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
                                src_group=master_group)
         master_group.authorize(ip_protocol='tcp', from_port=50050, to_port=50050,
-                               src_group=slave_group
+                               src_group=slave_group)
         master_group.authorize(ip_protocol='udp', from_port=50050, to_port=50050,
                                src_group=slave_group)
 
