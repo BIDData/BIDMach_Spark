@@ -49,7 +49,7 @@ object RunOnSpark{
   def runOnSpark(sc: SparkContext, learner:Learner, rdd_data:RDD[(SerText,MatIO)], num_partitions: Int):RDD[Learner] = {
     // Instantiate a learner, run the first pass, and reduce all of the learners' models into one learner.
     var reduced_learner = rdd_data.mapPartitions[Learner](firstPass(learner), preservesPartitioning=true)
-                                  .reduce(reduce_fn(0))
+                                  .treeReduce(reduce_fn(0), 2)
     // Once we've reduced our distributed learners into one learner, we can update our model.
     reduced_learner.updateM
 
@@ -58,17 +58,23 @@ object RunOnSpark{
                                       .coalesce(num_partitions)
                                       .mapPartitions[Learner](mapToLearner(reduced_learner), preservesPartitioning=true)
 
+    rdd_learner.persist()
+    
     // While we still have more passes to complete
     for (i <- 1 until learner.opts.npasses) {
       // Call nextPass on each learner and reduce the learners into one learner
+      val t0 = System.nanoTime()
       reduced_learner = rdd_data.zipPartitions(rdd_learner, preservesPartitioning=true)(nextPass)
-                                .reduce(reduce_fn(i))
+                                .treeReduce(reduce_fn(i), 2)
+      val t1 = System.nanoTime()
+      println("Elapsed time iter " + i + ": " + (t1 - t0)/math.pow(10, 9)+ "s")
       // Update the model
       reduced_learner.updateM
       // Redistribute the learner across all partitions
       rdd_learner = sc.parallelize(1 to num_partitions)
                       .coalesce(num_partitions)
                       .mapPartitions[Learner](mapToLearner(reduced_learner), preservesPartitioning=true)
+      rdd_learner.persist()
     }
     // Note: The returned RDD has a transformation applied to it.
     rdd_learner = rdd_learner.mapPartitions(wrapUpLearner, preservesPartitioning=true)
