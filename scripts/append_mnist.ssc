@@ -2,10 +2,11 @@ import BIDMat.MatIO
 import BIDMat.HDFSIO
 import BIDMat.SerText
 
-val prefix = "hdfs://localhost:9000/BIDMach_MNIST/parts/"
-val fnames = (0 to 80).map(i => (prefix + "alls%02d.fmat.lz4" format i)).toList
+val myname = java.net.InetAddress.getLocalHost.getHostAddress
+val prefix = "hdfs://" + myname + ":9000/BIDMach_MNIST/"
+val fnames = (0 to 80).map(i => (prefix + "parts/alls%02d.fmat.lz4" format i)).toList
 
 val hdfsio = new HDFSIO
-hdfsio.appendFiles(fnames, "hdfs://localhost:9000/BIDMach_MNIST/merged.fmat.lz4", 2);
+hdfsio.appendFiles(fnames, prefix + "merged.fmat.lz4", 2);
 
 
