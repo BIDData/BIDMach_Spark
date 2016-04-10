@@ -11,7 +11,7 @@ from sys import stderr;
 from datetime import datetime
 
 key_pair='Pils pair'
-id_file="/home/jfc/.ssh/dss2_rsa"
+id_file="/Users/eviltwin/.ssh/dss2_rsa.pem"
 
 region="us-west-2"
 zone="us-west-2a"
@@ -30,15 +30,45 @@ core_site = """
 </configuration>
 """
 
+yarn_site = """
+<configuration>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+        <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>%s</value>
+    </property>
+</configuration>
+"""
+
+mapred_site = """
+<configuration>
+    <property>
+        <name>mapreduce.jobtracker.address</name>
+        <value>%s:54311</value>
+    </property>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+</configuration>
+"""
+
+
 def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone, core_site=core_site):
     opts = Options();
-    opts.user = "ec2-user"
+    opts.user = "ubuntu"
     opts.identity_file = id_file
     aaki = os.getenv('AWS_ACCESS_KEY_ID')
     asak = os.getenv('AWS_SECRET_ACCESS_KEY')
     if aaki is None:
         print("ERROR: The environment variable AWS_ACCESS_KEY_ID must be set")
-        sys.exit(1)
     if asak is None:
         print("ERROR: The environment variable AWS_SECRET_ACCESS_KEY must be set")
         sys.exit(1)
@@ -65,8 +95,8 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone, c
     slave_names = [get_dns_name(i, opts.private_ips) for i in slaves];
     slaves_string = reduce(lambda x,y : x + "\n" + y, slave_names);
     
-    hscommand="echo -e '%s' > /opt/spark/conf/slaves" % slaves_string
-    ssh(master, opts, hscommand.encode('ascii','ignore'))
+#    hscommand="echo -e '%s' > /opt/spark/conf/slaves" % slaves_string
+#    ssh(master, opts, hscommand.encode('ascii','ignore'))
 
     sscommand="echo -e '%s' > /usr/local/hadoop/etc/hadoop/slaves" % slaves_string
     ssh(master, opts, sscommand.encode('ascii','ignore'))
@@ -75,11 +105,22 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone, c
     hccommand="echo '%s' >  /usr/local/hadoop/etc/hadoop/core-site.xml" % core_conf
     ssh(master, opts, hccommand.encode('ascii','ignore'))
 
+    yarn_conf = yarn_site % master
+    yarncommand="echo '%s' >  /usr/local/hadoop/etc/hadoop/yarn-site.xml" % yarn_conf
+    ssh(master, opts, yarncommand.encode('ascii','ignore'))
+
+    mapred_conf = mapred_site % master
+    mapredcommand="echo '%s' >  /usr/local/hadoop/etc/hadoop/mapred-site.xml" % mapred_conf
+    ssh(master, opts, mapredcommand.encode('ascii','ignore'))
+
+
     ssh(master, opts, """rm -f ~/.ssh/known_hosts""")
     for slave in slave_names:
         print("configuring slave %s" % slave)
         ssh(slave, opts, """rm -f ~/.ssh/known_hosts""")
         ssh(slave, opts, hccommand.encode('ascii','ignore'))
+        ssh(slave, opts, yarncommand.encode('ascii','ignore'))
+        ssh(slave, opts, mapredcommand.encode('ascii','ignore'))
         ssh(slave, opts, sscommand.encode('ascii','ignore'))
 
     if (genkeys):
@@ -309,7 +350,7 @@ def is_cluster_ssh_available(cluster_instances, opts):
         return True
 
 
-start_instances("bidcluster3", id_file, False)
+start_instances("petuumcluster1", id_file, False)
 
 #print ec2.regions()
 # conn = ec2.connect_to_region("us-west-2", aws_access_key_id=aaki, aws_secret_access_key=asak);
