@@ -44,6 +44,10 @@ yarn_site = """
         <name>yarn.resourcemanager.hostname</name>
         <value>%s</value>
     </property>
+    <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+    </property>
 </configuration>
 """
 
