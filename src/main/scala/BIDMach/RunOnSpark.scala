@@ -10,74 +10,73 @@ import org.apache.spark.rdd.RDD
 import org.apache.hadoop.io.Text;
 import org.apache.spark.SparkContext
 import scala.reflect.ClassTag
+import org.apache.spark.util.SizeEstimator;
+import BIDMach.models.KMeans
 
 object RunOnSpark{
   // Called copy the reduced learner into a RDD of learners.
-  def mapToMockLearner(learner:MockLearner)(l: Iterator[Int]): Iterator[MockLearner] = {
-    Iterator[MockLearner](learner)
+  def mapToLearner(learner:Learner)(l: Iterator[Int]): Iterator[Learner] = {
+    Iterator[Learner](learner)
   }
 
   // Instantiates a learner based on the parameters of the learner that is passed in and binds the data to the new learner.
-  def firstPass(l: MockLearner)(rdd_data:Iterator[(SerText, BIDMat.MatIO)]):Iterator[MockLearner] = {
+  def firstPass(l: Learner)(rdd_data:Iterator[(SerText, BIDMat.MatIO)]):Iterator[Learner] = {
     val i_opts = new IteratorSource.Options
     i_opts.iter = rdd_data
     val iteratorSource = new IteratorSource(i_opts)
-    val learner = new MockLearner(iteratorSource, l.model, l.mixins, l.updater, l.datasink)
+    val learner = new Learner(iteratorSource, l.model, l.mixins, l.updater, l.datasink)
     learner.firstPass(null)
-    Iterator[MockLearner](learner)
+    learner.datasource.close
+    learner.model.mats = null
+    learner.model.gmats = null
+    println("Learner: "+ SizeEstimator.estimate(learner));
+
+    Iterator[Learner](learner)
   }
 
   // Runs subsequent passes of the learner.
-  def nextPass(data_iterator: Iterator[(SerText, BIDMat.MatIO)], learner_iterator: Iterator[MockLearner]):Iterator[MockLearner] = {
-    val learner = learner_iterator.next
-    learner.nextPass(data_iterator)
-    Iterator[MockLearner](learner)
+  def nextPass(learner: Learner)(data_iterator: Iterator[(SerText, BIDMat.MatIO)]):Iterator[Learner] = {
+    learner.datasource.asInstanceOf[IteratorSource].opts.iter = data_iterator
+    learner.datasource.init
+    learner.model.bind(learner.datasource)
+    learner.nextPass(null)
+    learner.datasource.close
+    learner.model.mats = null
+    learner.model.gmats = null
+    println("Learner: "+ SizeEstimator.estimate(learner));
+    Iterator[Learner](learner)
   }
 
-  def wrapUpMockLearner(learner_iterator: Iterator[MockLearner]): Iterator[MockLearner] = {
+  def wrapUpLearner(learner_iterator: Iterator[Learner]): Iterator[Learner] = {
     val learner = learner_iterator.next
     learner.wrapUp
-    Iterator[MockLearner](learner)
+    Iterator[Learner](learner)
   }
 
   // Gathers and reduces all the learners into one learner.
-  def reduce_fn(ipass: Int)(l: MockLearner, r: MockLearner): MockLearner = {
+  def reduce_fn(ipass: Int)(l: Learner, r: Learner): Learner = {
     l.model.combineModels(ipass, r.model)
     l
   }
 
-  def runOnSpark(sc: SparkContext, learner:MockLearner, rdd_data:RDD[(SerText,MatIO)], num_partitions: Int):RDD[MockLearner] = {
+  def runOnSpark(sc: SparkContext, learner:Learner, rdd_data:RDD[(SerText,MatIO)], num_partitions: Int):Learner = {
     // Instantiate a learner, run the first pass, and reduce all of the learners' models into one learner.
-    var reduced_learner = rdd_data.mapPartitions[MockLearner](firstPass(learner), preservesPartitioning=true)
-                                  .treeReduce(reduce_fn(0), 2)
+    var reduced_learner = rdd_data.mapPartitions[Learner](firstPass(learner), preservesPartitioning=true)
+      .treeReduce(reduce_fn(0), 2)
     // Once we've reduced our distributed learners into one learner, we can update our model.
-    reduced_learner.updateM
+    reduced_learner.updateM(0)
 
-    // Redistribute our reduced learner across all partitions
-    var rdd_learner: RDD[MockLearner] = sc.parallelize(1 to num_partitions)
-                                      .coalesce(num_partitions)
-                                      .mapPartitions[MockLearner](mapToMockLearner(reduced_learner), preservesPartitioning=true)
-
-    rdd_learner.persist()
-    
     // While we still have more passes to complete
     for (i <- 1 until learner.opts.npasses) {
       // Call nextPass on each learner and reduce the learners into one learner
       val t0 = System.nanoTime()
-      reduced_learner = rdd_data.zipPartitions(rdd_learner, preservesPartitioning=true)(nextPass)
-                                .treeReduce(reduce_fn(i), 2)
+      reduced_learner = rdd_data.mapPartitions[Learner](nextPass(reduced_learner), preservesPartitioning=true)
+        .treeReduce(reduce_fn(i), 2)
       val t1 = System.nanoTime()
       println("Elapsed time iter " + i + ": " + (t1 - t0)/math.pow(10, 9)+ "s")
       // Update the model
-      reduced_learner.updateM
-      // Redistribute the learner across all partitions
-      rdd_learner = sc.parallelize(1 to num_partitions)
-                      .coalesce(num_partitions)
-                      .mapPartitions[MockLearner](mapToMockLearner(reduced_learner), preservesPartitioning=true)
-      rdd_learner.persist()
+      reduced_learner.updateM(i)
     }
-    // Note: The returned RDD has a transformation applied to it.
-    rdd_learner = rdd_learner.mapPartitions(wrapUpMockLearner, preservesPartitioning=true)
-    rdd_learner
+    reduced_learner
   }
 }
