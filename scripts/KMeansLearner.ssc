@@ -1,0 +1,26 @@
+import org.apache.spark.rdd.RDD
+import scala.reflect.ClassTag
+import BIDMat.MatIO
+import BIDMat.SerText
+import BIDMach.RunOnSpark._
+import BIDMach.MockLearner
+import BIDMach.Learner
+import BIDMach.models.KMeans
+import org.apache.spark.HashPartitioner
+
+// Specify IP address of master here
+val MASTER_DNS = "ip-10-22-32-153.us-west-2.compute.internal"
+val num_executors = 16
+val rdd_data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/merged.fmat.lz4".format(MASTER_DNS), classOf[SerText], classOf[BIDMat.MatIO]).partitionBy(new HashPartitioner(num_executors)).persist()
+val (learner,opts) = KMeans.learner()
+opts.batchSize = 10000
+opts.npasses = 10
+opts.dim = 256
+def time[R](block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block
+    val t1 = System.nanoTime()
+    println("Elapsed time: " + (t1 - t0)/math.pow(10, 9)+ "s")
+    result
+}
+val result = time {runOnSpark(sc,learner, rdd_data, num_executors)}
