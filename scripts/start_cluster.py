@@ -117,15 +117,22 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone, c
     mapredcommand="echo '%s' >  /usr/local/hadoop/etc/hadoop/mapred-site.xml" % mapred_conf
     ssh(master, opts, mapredcommand.encode('ascii','ignore'))
 
+    scpcommand = "scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@ec2-54-214-182-135.us-west-2.compute.amazonaws.com:/home/ubuntu/mnist8m.libsvm /home/ubuntu/"
 
+
+#
     ssh(master, opts, """rm -f ~/.ssh/known_hosts""")
     for slave in slave_names:
         print("configuring slave %s" % slave)
         ssh(slave, opts, """rm -f ~/.ssh/known_hosts""")
+        # Uncomment after formatting namenodes.
+        #ssh(slave, opts, """rm -Rf /usr/local/hadoop_tmp/hdfs/datanode""")
         ssh(slave, opts, hccommand.encode('ascii','ignore'))
         ssh(slave, opts, yarncommand.encode('ascii','ignore'))
         ssh(slave, opts, mapredcommand.encode('ascii','ignore'))
         ssh(slave, opts, sscommand.encode('ascii','ignore'))
+        # Copy data everywhere to make processing faster.
+        # ssh(slave, opts, scpcommand.encode('ascii','ignore'))
 
     if (genkeys):
         print("Generating cluster's SSH key on master...")
@@ -354,7 +361,7 @@ def is_cluster_ssh_available(cluster_instances, opts):
         return True
 
 
-start_instances("petuumcluster1", id_file, False)
+start_instances("petuumcluster2", id_file, False)
 
 #print ec2.regions()
 # conn = ec2.connect_to_region("us-west-2", aws_access_key_id=aaki, aws_secret_access_key=asak);
