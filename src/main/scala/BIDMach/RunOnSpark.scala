@@ -35,6 +35,7 @@ object RunOnSpark{
     import BIDMach.updaters.{ADAGrad,Batch,BatchNorm,Grad,IncMult,IncNorm,Telescoping}
     import BIDMach.causal.{IPTW}
     println(System.getProperty("java.class.path"))
+    println(System.getProperty("java.library.path"))
     Mat.checkMKL(true)
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
