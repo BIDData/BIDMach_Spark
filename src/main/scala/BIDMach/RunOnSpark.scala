@@ -47,16 +47,10 @@ object RunOnSpark{
     import BIDMach.mixins.{CosineSim,Perplexity,Top,L1Regularizer,L2Regularizer}
     import BIDMach.updaters.{ADAGrad,Batch,BatchNorm,Grad,IncMult,IncNorm,Telescoping}
     import BIDMach.causal.{IPTW}
-    println(System.getProperty("java.class.path"))
-    println(System.getProperty("java.library.path"))
     Mat.checkMKL(true)
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
-    println("Mat hascuda: " + Mat.hasCUDA)
 
-    if (!rdd_data.hasNext) {
-      println("rdd_data is null!")
-    }
     val i_opts = new IteratorSource.Options
     i_opts.iter = rdd_data
     val iteratorSource = new IteratorSource(i_opts)
@@ -64,6 +58,7 @@ object RunOnSpark{
     learner.firstPass(null)
     if (learner.useGPU) {
       Learner.toCPU(learner.modelmats)
+      Learner.toCPU(learner.model.updatemats)
     }
     learner.datasource.close
     learner.model.mats = null
@@ -88,12 +83,16 @@ object RunOnSpark{
     import BIDMach.mixins.{CosineSim,Perplexity,Top,L1Regularizer,L2Regularizer}
     import BIDMach.updaters.{ADAGrad,Batch,BatchNorm,Grad,IncMult,IncNorm,Telescoping}
     import BIDMach.causal.{IPTW}
-
     Mat.checkMKL(true)
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
 
     val learner = learner_iterator.next
+    if (learner.useGPU) {
+      for (i<- 0 until learner.model.updatemats.length) {
+        learner.model.updatemats(i) = learner.model.convertMat(learner.model.updatemats(i))
+      }
+    }
     learner.model.copyFrom(l.model)
     learner.datasource.asInstanceOf[IteratorSource].opts.iter = data_iterator
     learner.datasource.init
@@ -101,11 +100,11 @@ object RunOnSpark{
     learner.nextPass(null)
     if (learner.useGPU) {
       Learner.toCPU(learner.modelmats)
+      Learner.toCPU(learner.model.updatemats)
     }
     learner.datasource.close
     learner.model.mats = null
     learner.model.gmats = null
-    println("Learner: "+ SizeEstimator.estimate(learner));
     Iterator[Learner](learner)
   }
 
@@ -123,6 +122,9 @@ object RunOnSpark{
 
   def runOnSpark(sc: SparkContext, learner:Learner, rdd_data:RDD[(SerText,MatIO)], num_partitions: Int):Array[Learner] = {
     // Instantiate a learner, run the first pass, and reduce all of the learners' models into one learner.
+    Mat.checkMKL(true)
+    Mat.hasCUDA = 0
+    Mat.checkCUDA(true)
     var rdd_learner: RDD[Learner] = rdd_data.mapPartitions[Learner](firstPass(learner), preservesPartitioning=true).persist()
     var reduced_learner = rdd_learner.treeReduce(reduce_fn(0), 2)
     // Once we've reduced our distributed learners into one learner, we can update our model.
