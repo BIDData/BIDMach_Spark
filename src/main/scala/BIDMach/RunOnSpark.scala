@@ -88,12 +88,13 @@ object RunOnSpark{
     Mat.checkCUDA(true)
 
     val learner = learner_iterator.next
+    learner.model.copyFrom(l.model)
     if (learner.useGPU) {
+      resetGPUs
       for (i<- 0 until learner.model.updatemats.length) {
         learner.model.updatemats(i) = learner.model.convertMat(learner.model.updatemats(i))
       }
     }
-    learner.model.copyFrom(l.model)
     learner.datasource.asInstanceOf[IteratorSource].opts.iter = data_iterator
     learner.datasource.init
     learner.model.bind(learner.datasource)
