@@ -7,20 +7,20 @@ import java.io.DataInput
 
 class MatIO extends Writable with MatIOtrait {
   
-  var mats : Array[Mat] = null;
+  var mats : Array[ND] = null;
   def mat = mats(0);
   def len = mats.length
-  def get:Array[Mat] = mats
+  def get:Array[ND] = mats
   def mat_=(m:Mat) = {
     if (mats == null) {
-      mats = new Array[Mat](1);
+      mats = new Array[ND](1);
     }
     mats(0) = m;
   }
   
   def mkmats(n:Int) = {
 	  if (mats == null || mats.length != n) {
-		  mats = new Array[Mat](n);
+		  mats = new Array[ND](n);
 	  }
   }
 
@@ -42,18 +42,19 @@ class MatIO extends Writable with MatIOtrait {
   
   override def readFields(in: DataInput):Unit = {
     val nmats : Int = in.readInt();
-    mats = new Array[Mat](nmats);
+    mats = new Array[ND](nmats);
     for (i <- 0 until nmats) {
     	val matType : Int = in.readInt();
+    	val oldmat = if (mats(i).asInstanceOf[AnyRef] == null) null else mats(i).asMat;
       matType match {
-      case MatTypeTag.FMat => mats(i) = HMat.loadFMat(in, mats(i));
-      case MatTypeTag.IMat => mats(i) = HMat.loadIMat(in, mats(i));
-      case MatTypeTag.LMat => mats(i) = HMat.loadLMat(in, mats(i));
-      case MatTypeTag.DMat => mats(i) = HMat.loadDMat(in, mats(i));
-      case MatTypeTag.SMat => mats(i) = HMat.loadSMat(in, mats(i));
-      case MatTypeTag.SDMat => mats(i) = HMat.loadSDMat(in, mats(i));
-      case MatTypeTag.SBMat => mats(i) = HMat.loadSBMat(in, mats(i));
-      case MatTypeTag.CSMat => mats(i) = HMat.loadCSMat(in, mats(i));
+      case MatTypeTag.FMat => mats(i) = HMat.loadFMat(in, oldmat);
+      case MatTypeTag.IMat => mats(i) = HMat.loadIMat(in, oldmat);
+      case MatTypeTag.LMat => mats(i) = HMat.loadLMat(in, oldmat);
+      case MatTypeTag.DMat => mats(i) = HMat.loadDMat(in, oldmat);
+      case MatTypeTag.SMat => mats(i) = HMat.loadSMat(in, oldmat);
+      case MatTypeTag.SDMat => mats(i) = HMat.loadSDMat(in, oldmat);
+      case MatTypeTag.SBMat => mats(i) = HMat.loadSBMat(in, oldmat);
+      case MatTypeTag.CSMat => mats(i) = HMat.loadCSMat(in, oldmat);
       }
     } 
   }  

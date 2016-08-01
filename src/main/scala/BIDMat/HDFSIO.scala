@@ -33,10 +33,10 @@ class HDFSIO extends HDFSIOtrait {
 		val value = new MatIO;
 		value.mat = omat;
 		readThing(fname, value);
-		value.mat;
+		value.mat.asMat;
 	}
   
-  def readMats(fname:String, omats:Array[Mat]):Array[Mat] = {
+  def readMats(fname:String, omats:Array[ND]):Array[ND] = {
     val value = new MatIO;
     value.mats = omats;
     readThing(fname, value);
@@ -72,7 +72,7 @@ class HDFSIO extends HDFSIOtrait {
 		writeThing(fname, value, compress);
 	}
   
-  def writeMats(fname:String, mats:Array[Mat], compress:Int) = {
+  def writeMats(fname:String, mats:Array[ND], compress:Int) = {
     val value = new MatIO;
     value.mats = mats;
     writeThing(fname, value, compress);

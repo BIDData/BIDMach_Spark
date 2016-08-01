@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/main/scala/BIDMat"/>
+	<classpathentry kind="src" path="src/main/scala/BIDMach"/>
 	<classpathentry kind="lib" path="lib/BIDMat.jar"/>
 	<classpathentry kind="lib" path="lib/BIDMach.jar"/>
 	<classpathentry kind="lib" path="lib/sbt-launch.jar"/>
