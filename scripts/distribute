@@ -1,0 +1,6 @@
+#!/bin/bash
+
+while read slave; do
+    echo "distributing to ${slave}"
+    rsync -r "${1}/" "${slave}:${1}"
+done < /opt/spark/conf/slaves
