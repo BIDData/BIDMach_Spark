@@ -1,0 +1,8 @@
+
+export SPARK_SUBMIT_OPTS="$SPARK_SUBMIT_OPTS -Dscala.usejavacp=true"
+/code/spark/bin/spark-submit \
+   --class org.apache.spark.repl.Main \
+   --master local \
+   /code/BIDMach_Spark/target/BIDMachSpark-1.1.0-cuda7.5-jar-with-dependencies.jar
+
+fix

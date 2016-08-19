@@ -10,7 +10,7 @@
   <name>BIDMachSpark</name>
   <description>BIDMach is an optimized machine learning library in Scala</description>
   <properties>
-    <scalaVersion>2.11</scalaVersion>
+    <scalaVersion>2.11.4</scalaVersion>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <repositories>
@@ -34,21 +34,35 @@
   </repositories>
   <dependencies>
     <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scalaVersion}</version>
+    </dependency>
+    <dependency>
       <groupId>BIDMach</groupId>
       <artifactId>BIDMach</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
-      <version>2.6.4</version>
-    </dependency> 
-    <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_2.11</artifactId>
-      <version>1.5.2</version>
+      <version>1.6.2</version>
     </dependency> 
   </dependencies>
+  <profiles>
+    <profile>
+      <id>hadoop-2.4</id>
+    </profile>
+    <profile>
+      <id>hadoop-2.5</id>
+    </profile>
+    <profile>
+      <id>hadoop-2.6</id>
+    </profile>
+    <profile>
+      <id>hadoop-2.7</id>
+    </profile>
+  </profiles>
   <build>
     <plugins>
       <plugin>
@@ -65,12 +79,14 @@
         </executions>
         <configuration>
           <jvmArgs>
-            <jvmArg>-Xmx12g</jvmArg>
+            <jvmArg>-Xmx8g</jvmArg>
           </jvmArgs>
           <args>
             <arg>-feature</arg>
             <arg>-deprecation</arg>
             <arg>-target:jvm-1.7</arg>
+            <arg>-dependencyfile</arg>
+            <arg>${project.build.directory}/.scala_dependencies</arg>
           </args>
         </configuration>
       </plugin>
@@ -90,6 +106,24 @@
         <configuration>
           <skipTests>true</skipTests>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.4.1</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
     <resources>
