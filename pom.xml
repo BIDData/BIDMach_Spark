@@ -39,6 +39,11 @@
       <version>${scalaVersion}</version>
     </dependency>
     <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+      <version>${scalaVersion}</version>
+    </dependency>
+    <dependency>z
       <groupId>BIDMach</groupId>
       <artifactId>BIDMach</artifactId>
       <version>${project.version}</version>
@@ -49,20 +54,6 @@
       <version>1.6.2</version>
     </dependency> 
   </dependencies>
-  <profiles>
-    <profile>
-      <id>hadoop-2.4</id>
-    </profile>
-    <profile>
-      <id>hadoop-2.5</id>
-    </profile>
-    <profile>
-      <id>hadoop-2.6</id>
-    </profile>
-    <profile>
-      <id>hadoop-2.7</id>
-    </profile>
-  </profiles>
   <build>
     <plugins>
       <plugin>
