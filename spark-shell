@@ -15,8 +15,8 @@ pushd "${BIDMACH_ROOT}"  > /dev/null
 BIDMACH_ROOT=`pwd`
 BIDMACH_ROOT="$( echo ${BIDMACH_ROOT} | sed s+/cygdrive/c+c:+ )" 
 
-BIDMACH_JARS=`echo target/BIDMachSpark-*-assembly.jar`
+BIDMACH_JAR=`echo target/BIDMachSpark-*-assembly.jar`
 
 #${SPARK_HOME}/bin/spark-shell --master spark://${HOSTNAME}:7077 --jars ${BIDMACH_JARS} --executor-memory 10G --driver-memory 8G
 
-${SPARK_HOME}/bin/spark-shell --master local --jars ${BIDMACH_JARS}
+${SPARK_HOME}/bin/spark-shell --master local --jars  ${BIDMACH_JAR}
