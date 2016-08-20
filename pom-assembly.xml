@@ -8,10 +8,11 @@
   <packaging>jar</packaging>
   <version>1.1.0-cuda7.5</version>
   <name>BIDMachSpark</name>
-  <description>BIDMach is an optimized machine learning library in Scala</description>
+  <description>Run BIDMach on Spark</description>
   <properties>
     <scala.version>2.11.7</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
+    <spark.version>2.0.0</spark.version>
     <jline.version>${scala.binary.version}</jline.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -43,7 +44,7 @@
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_2.11</artifactId>
-      <version>2.0.0</version>
+      <version>${spark.version}</version>
       <scope>provided</scope>
     </dependency> 
   </dependencies>
