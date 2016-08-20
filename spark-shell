@@ -2,10 +2,21 @@
 # export JAVA_HOME="" # Set here if not set in environment
 # export CUDA_PATH="" # Set here if not set in environment
 # export SPARK_HOME="" # Set here if not set in environment
-BIDMACH_HOME=/opt/BIDMach # Set here if not set in environment
+BIDMACH_ROOT="${BASH_SOURCE[0]}"
+if [ ! `uname` = "Darwin" ]; then
+  BIDMACH_ROOT=`readlink -f "${BIDMACH_ROOT}"`
+else 
+  while [ -L "${BIDMACH_ROOT}" ]; do
+    BIDMACH_ROOT=`readlink "${BIDMACH_ROOT}"`
+  done
+fi
+BIDMACH_ROOT=`dirname "$BIDMACH_ROOT"`
+pushd "${BIDMACH_ROOT}"  > /dev/null
+BIDMACH_ROOT=`pwd`
+BIDMACH_ROOT="$( echo ${BIDMACH_ROOT} | sed s+/cygdrive/c+c:+ )" 
 
-JCUDA_VERSION="0.7.0a" # Fix if needed
+BIDMACH_JARS=`echo target/BIDMachSpark-*-assembly.jar`
 
-BIDMACH_JARS=$(find ${BIDMACH_HOME}| grep '\.jar' | grep -vE 'IScala.jar|jline.*\.jar' | tr '\n' ',')
+#${SPARK_HOME}/bin/spark-shell --master spark://${HOSTNAME}:7077 --jars ${BIDMACH_JARS} --executor-memory 10G --driver-memory 8G
 
-${SPARK_HOME}/bin/spark-shell --master spark://${HOSTNAME}:7077 --jars ${BIDMACH_JARS} --executor-memory 10G --driver-memory 8G
+${SPARK_HOME}/bin/spark-shell --master local --jars ${BIDMACH_JARS}

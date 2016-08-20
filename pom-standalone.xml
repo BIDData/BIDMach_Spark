@@ -10,7 +10,7 @@
   <name>BIDMachSpark</name>
   <description>BIDMach is an optimized machine learning library in Scala</description>
   <properties>
-    <scala.version>2.11.7</scala.version>
+    <scala.version>2.11.8</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <jline.version>${scala.binary.version}</jline.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -34,13 +34,17 @@
       </snapshots>
     </repository>
   </repositories>
+  <dependency>
+    <groupId>org.scala-lang</groupId>
+    <artifactId>scala-library</artifactId>
+    <version>${scala.version}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.scala-lang</groupId>
+    <artifactId>scala-compiler</artifactId>
+    <version>${scala.version}</version>
+  </dependency>
   <dependencies>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-      <scope>provided</scope>
-    </dependency>
     <dependency>
       <groupId>BIDMach</groupId>
       <artifactId>BIDMach</artifactId>
@@ -101,9 +105,9 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <version>2.4.1</version>
         <configuration>
-	  <descriptors>
-            <descriptor>excludes.xml</descriptor>
-          </descriptors>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
         </configuration>
         <executions>
           <execution>
