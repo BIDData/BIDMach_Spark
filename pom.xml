@@ -13,7 +13,7 @@
     <scala.version>2.11.7</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <spark.version>2.0.0</spark.version>
-    <hadoop.version>2.6.4</hadoop.version>
+    <hadoop.version>2.6.0</hadoop.version>
     <jline.version>${scala.binary.version}</jline.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -42,7 +42,7 @@
       <activation>
 	<property>
           <name>hadoop.version</name>
-	  <value>2.6.4</value>
+	  <value>${hadoop.version}</value>
         </property>
       </activation>
     </profile>
