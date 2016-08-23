@@ -9,7 +9,7 @@ import org.apache.spark.HashPartitioner
 
 // Specify IP address of master here
 val MASTER_DNS = java.net.InetAddress.getLocalHost.getHostAddress
-val num_executors = 16
+val num_executors = 4
 val rdd_data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/merged.fmat.lz4".format(MASTER_DNS), classOf[SerText], classOf[BIDMat.MatIO]).partitionBy(new HashPartitioner(num_executors)).persist()
 val (learner,opts) = KMeans.learner()
 opts.batchSize = 10000

@@ -1,0 +1,2 @@
+
+/opt/spark/bin/spark-shell --master spark://${HOSTNAME}:7077
