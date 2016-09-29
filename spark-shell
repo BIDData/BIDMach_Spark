@@ -17,6 +17,21 @@ BIDMACH_ROOT="$( echo ${BIDMACH_ROOT} | sed s+/cygdrive/c+c:+ )"
 
 BIDMACH_JAR=`echo target/BIDMachSpark-*-assembly.jar`
 
-${SPARK_HOME}/bin/spark-shell --master spark://${HOSTNAME}:7077 --jars "${BIDMACH_JAR}"
+OPTS=$(getopt -o m:j: --long master:,jars: -n 'parse-options' -- "$@")
+[[ $? -ne 0 ]] && echo 'Failed parsing options.' >&2 && exit 1
+eval set -- "$OPTS"
 
-#${SPARK_HOME}/bin/spark-shell --master local --jars  ${BIDMACH_JAR}
+MASTER="spark://${HOSTNAME}:7077"
+JARS="${BIDMACH_JAR}"
+OTHER=
+
+while true; do
+  case "$1" in
+    -m | --master ) MASTER="$2"; shift; shift;;
+    -j | --jars ) JARS="$2"; shift; shift;;
+    -- ) shift; break;;
+    * ) break;;
+  esac
+done
+
+${SPARK_HOME}/bin/spark-shell --master $MASTER --jars $JARS $@
