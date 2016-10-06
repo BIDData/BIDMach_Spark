@@ -1,0 +1,32 @@
+import BIDMat.FMat
+import BIDMat.ND
+import BIDMat.MatIO
+import BIDMat.HDFSIO
+import BIDMat.MatFunctions._
+
+val masterIP = java.net.InetAddress.getLocalHost.getHostAddress
+val prefix = "hdfs://" + masterIP + ":9000/BIDMach_MNIST/"
+
+val hdfsio = new HDFSIO
+
+for (i <- 0 until 80) {
+    val mats = new Array[ND](2)
+    mats(0) = loadFMat("/opt/BIDMach/data/MNIST8M/parts/data%02d.fmat.lz4" format i)
+    mats(1) = loadIMat("/opt/BIDMach/data/MNIST8M/parts/cats%02d.imat.lz4" format i)
+    hdfsio.writeMats(prefix + ("parts/rf_mats_imat%02d.lz4" format i), mats, 2);
+    println("%d / 80 parts loaded" format i);
+}
+println("done generating parts...");
+
+
+println("combining 80 mats...");
+hdfsio.appendFiles((0 until 80).map(i => (prefix + "parts/rf_mats_imat%02d.lz4" format i)).toList, prefix + "rf_data_imat_merged.fmat.lz4", 2);
+println("combining 40 mats...");
+hdfsio.appendFiles((0 until 40).map(i => (prefix + "parts/rf_mats_imat%02d.lz4" format i)).toList, prefix + "rf_data_imat_merged_40.fmat.lz4", 2);
+println("combining 20 mats...");
+hdfsio.appendFiles((0 until 20).map(i => (prefix + "parts/rf_mats_imat%02d.lz4" format i)).toList, prefix + "rf_data_imat_merged_20.fmat.lz4", 2);
+println("combining 10 mats...");
+hdfsio.appendFiles((0 until 10).map(i => (prefix + "parts/rf_mats_imat%02d.lz4" format i)).toList, prefix + "rf_data_imat_merged_10.fmat.lz4", 2);
+println();
+
+println("done");

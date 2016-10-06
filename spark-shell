@@ -5,7 +5,7 @@
 BIDMACH_ROOT="${BASH_SOURCE[0]}"
 if [ ! `uname` = "Darwin" ]; then
   BIDMACH_ROOT=`readlink -f "${BIDMACH_ROOT}"`
-else 
+else
   while [ -L "${BIDMACH_ROOT}" ]; do
     BIDMACH_ROOT=`readlink "${BIDMACH_ROOT}"`
   done
@@ -13,10 +13,25 @@ fi
 BIDMACH_ROOT=`dirname "$BIDMACH_ROOT"`
 pushd "${BIDMACH_ROOT}"  > /dev/null
 BIDMACH_ROOT=`pwd`
-BIDMACH_ROOT="$( echo ${BIDMACH_ROOT} | sed s+/cygdrive/c+c:+ )" 
+BIDMACH_ROOT="$( echo ${BIDMACH_ROOT} | sed s+/cygdrive/c+c:+ )"
 
 BIDMACH_JAR=`echo target/BIDMachSpark-*-assembly.jar`
 
-#${SPARK_HOME}/bin/spark-shell --master spark://${HOSTNAME}:7077 --jars ${BIDMACH_JARS} --executor-memory 10G --driver-memory 8G
+OPTS=$(getopt -o m:j: --long master:,jars: -n 'parse-options' -- "$@")
+[[ $? -ne 0 ]] && echo 'Failed parsing options.' >&2 && exit 1
+eval set -- "$OPTS"
 
-${SPARK_HOME}/bin/spark-shell --master local --jars  ${BIDMACH_JAR}
+MASTER="spark://${HOSTNAME}:7077"
+JARS="${BIDMACH_JAR}"
+OTHER=
+
+while true; do
+  case "$1" in
+    -m | --master ) MASTER="$2"; shift; shift;;
+    -j | --jars ) JARS="$2"; shift; shift;;
+    -- ) shift; break;;
+    * ) break;;
+  esac
+done
+
+${SPARK_HOME}/bin/spark-shell --master $MASTER --jars $JARS $@

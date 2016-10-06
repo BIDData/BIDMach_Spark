@@ -25,9 +25,9 @@ SPARK_EXECUTOR_INSTANCES=1
 # - SPARK_EXECUTOR_CORES, Number of cores for the workers (Default: 1).
 SPARK_EXECUTOR_CORES=2
 # - SPARK_EXECUTOR_MEMORY, Memory per Worker (e.g. 1000M, 2G) (Default: 1G)
-SPARK_EXECUTOR_MEMORY=4g
+SPARK_EXECUTOR_MEMORY=13g
 # - SPARK_DRIVER_MEMORY, Memory for Master (e.g. 1000M, 2G) (Default: 1G)
-SPARK_DRIVER_MEMORY=4g
+SPARK_DRIVER_MEMORY=13g
 # - SPARK_YARN_APP_NAME, The name of your application (Default: Spark)
 # - SPARK_YARN_QUEUE, The hadoop queue to use for allocation requests (Default: ‘default’)
 # - SPARK_YARN_DIST_FILES, Comma separated list of files to be distributed with the job.

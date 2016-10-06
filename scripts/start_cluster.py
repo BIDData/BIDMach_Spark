@@ -1,6 +1,6 @@
 
 from boto import ec2;
-import csv;
+import textwrap
 import sys;
 import pipes;
 import os;
@@ -11,7 +11,9 @@ from sys import stderr;
 from datetime import datetime
 
 key_pair='Pils pair'
-id_file="/home/jfc/.ssh/dss2_rsa"
+
+cur_user = subprocess.check_output('whoami').strip()
+id_file="/home/%s/.ssh/dss2_rsa" % (cur_user)
 
 region="us-west-2"
 zone="us-west-2a"
@@ -64,7 +66,7 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone, c
 
     slave_names = [get_dns_name(i, opts.private_ips) for i in slaves];
     slaves_string = reduce(lambda x,y : x + "\n" + y, slave_names);
-    
+
     hscommand="echo -e '%s' > /opt/spark/conf/slaves" % slaves_string
     ssh(master, opts, hscommand.encode('ascii','ignore'))
 
@@ -96,7 +98,7 @@ def start_instances(cluster, id_file, genkeys=False, region=region, zone=zone, c
             ssh_write(slave, opts, ['tar', 'x'], dot_ssh_tar)
 
 
-    
+
 
 def get_dns_name(instance, private_ips=False):
     dns = instance.public_dns_name if not private_ips else \
@@ -281,21 +283,32 @@ def wait_for_cluster_state(conn, opts, cluster_instances, cluster_state):
         t=(end_time - start_time).seconds
     )
 
-def is_ssh_available(host, opts):
+def is_ssh_available(host, opts, print_ssh_output=True):
     """
     Check if SSH is available on a host.
     """
-    try:
-        with open(os.devnull, 'w') as devnull:
-            ret = subprocess.check_call(
-                ssh_command(opts) + ['-t', '-t', '-o', 'ConnectTimeout=3',
-                                     '%s@%s' % (opts.user, host), stringify_command('true')],
-                stdout=devnull,
-                stderr=devnull
-            )
-        return ret == 0
-    except subprocess.CalledProcessError as e:
-        return False
+    s = subprocess.Popen(
+            ssh_command(opts) + ['-t', '-t', '-o', 'ConnectTimeout=3',
+                                 '%s@%s' % (opts.user, host), stringify_command('true')],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT  # we pipe stderr through stdout to preserve output order
+        )
+    cmd_output = s.communicate()[0]  # [1] is stderr, which we redirected to stdout
+
+    if s.returncode != 0 and print_ssh_output:
+        # extra leading newline is for spacing in wait_for_cluster_state()
+        print(textwrap.dedent("""\n
+            Warning: SSH connection error. (This could be temporary.)
+            Host: {h}
+            SSH return code: {r}
+            SSH output: {o}
+        """).format(
+            h=host,
+            r=s.returncode,
+            o=cmd_output.strip()
+        ))
+
+    return s.returncode == 0
 
 
 def is_cluster_ssh_available(cluster_instances, opts):

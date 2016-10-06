@@ -1,0 +1,63 @@
+import BIDMat.FMat
+import BIDMat.MatFunctions._
+import BIDMat.SciFunctions._
+import org.apache.spark.rdd.RDD
+import scala.reflect.ClassTag
+import BIDMat.MatIO
+import BIDMach.RunOnSpark._
+import BIDMach.Learner
+import BIDMach.models.RandomForest
+import BIDMach.datasources.IteratorSource
+import org.apache.hadoop.io.Text
+import org.apache.spark.HashPartitioner
+import org.apache.spark.storage.StorageLevel
+
+// Specify IP address of master here
+val MASTER_DNS = java.net.InetAddress.getLocalHost.getHostAddress
+val num_executors = 4
+
+val rdd_data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/rf_data_imat_merged_40.fmat.lz4".format(MASTER_DNS),
+                               classOf[Text],
+			       classOf[BIDMat.MatIO]
+			      ).partitionBy(new HashPartitioner(num_executors)).persist(StorageLevel.MEMORY_AND_DISK)
+
+val (learner, opts) = RandomForest.learner()
+opts.useGPU = true
+opts.batchSize = 10000
+opts.depth = 10
+opts.npasses = opts.depth // TODO: should happen automagically
+opts.ntrees = 50
+opts.impurity = 0
+opts.ncats = 10
+
+opts.nsamps = 12
+opts.nnodes = 20000
+opts.nbits = 16
+
+def time[R](block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block
+    val t1 = System.nanoTime()
+    println("Elapsed time: " + (t1 - t0)/math.pow(10, 9) + "s")
+    result
+}
+val trees = time {runOnSparkRF(sc, learner, rdd_data, num_executors)}
+
+println()
+println("Done training! Testing forest.")
+
+val test = loadFMat("/opt/BIDMach/data/MNIST8M/parts/data60.fmat.lz4")
+val tcats = loadFMat("/opt/BIDMach/data/MNIST8M/parts/cats60.fmat.lz4")
+val tcat = maxi2(tcats, 1)._2
+
+val (pp, popts) = RandomForest.predictor(trees.map(_.model), test)
+
+println("Sample ftrees dims: %s" format trees(1).model.asInstanceOf[RandomForest].ftrees.dims)
+println("Predictor ftrees dims: %s" format pp.model.asInstanceOf[RandomForest].ftrees.dims)
+
+pp.predict
+val preds = pp.preds(0)
+
+val accuracy = FMat(sum(preds == tcat))(0,0) / preds.size
+
+println("Accuracy: %f" format accuracy)
