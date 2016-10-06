@@ -183,12 +183,11 @@ object RunOnSpark{
     i_opts.iter = rdd_data
     val iteratorSource = new IteratorSource(i_opts)
     val learner = new Learner(iteratorSource, l.model, l.mixins, l.updater, l.datasink, l.opts)
+    learner.init
+
     learner.firstPass(null)
     learner.updateM(0)
-    if (learner.useGPU) {
-      Learner.toCPU(learner.modelmats)
-      Learner.toCPU(learner.model.updatemats)
-    }
+
     learner.datasource.close
     learner.model.mats = null
     learner.model.gmats = null
@@ -221,21 +220,13 @@ object RunOnSpark{
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
 
-    if (learner.useGPU) {
-      resetGPUs
-      for (i <- 0 until learner.model.updatemats.length) {
-        learner.model.updatemats(i) = learner.model.convertMat(learner.model.updatemats(i))
-      }
-    }
     learner.datasource.asInstanceOf[IteratorSource].opts.iter = data_iterator
     learner.datasource.init
     learner.model.bind(learner.datasource)
+
     learner.nextPass(null)
     learner.updateM(ipass)
-    if (learner.useGPU) {
-      Learner.toCPU(learner.modelmats)
-      Learner.toCPU(learner.model.updatemats)
-    }
+
     learner.datasource.close
     learner.model.mats = null
     learner.model.gmats = null
@@ -252,14 +243,14 @@ object RunOnSpark{
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
     var rddLearner:RDD[Learner] = rddData.mapPartitions[Learner](
-      firstPassRF(learner), preservesPartitioning=true).persist(StorageLevel.MEMORY_AND_DISK)
+      firstPassRF(learner), preservesPartitioning=true).persist()
 
     for (i <- 1 until learner.opts.npasses) {
       // Call nextPass on each learner and reduce the learners into one learner
       val t0 = System.nanoTime()
 
       val newRddLearner = rddData.zipPartitions(rddLearner, true)(
-        nextPassRF(i)).persist(StorageLevel.MEMORY_AND_DISK)
+        nextPassRF(i)).persist()
 
       rddLearner = newRddLearner
 

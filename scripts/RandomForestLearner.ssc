@@ -16,12 +16,13 @@ import org.apache.spark.storage.StorageLevel
 val MASTER_DNS = java.net.InetAddress.getLocalHost.getHostAddress
 val num_executors = 4
 
-val rdd_data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/rf_data_merged_20.fmat.lz4".format(MASTER_DNS),
+val rdd_data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/rf_data_imat_merged_40.fmat.lz4".format(MASTER_DNS),
                                classOf[Text],
 			       classOf[BIDMat.MatIO]
 			      ).partitionBy(new HashPartitioner(num_executors)).persist(StorageLevel.MEMORY_AND_DISK)
 
 val (learner, opts) = RandomForest.learner()
+opts.useGPU = true
 opts.batchSize = 10000
 opts.depth = 10
 opts.npasses = opts.depth // TODO: should happen automagically
@@ -50,8 +51,11 @@ val tcats = loadFMat("/opt/BIDMach/data/MNIST8M/parts/cats60.fmat.lz4")
 val tcat = maxi2(tcats, 1)._2
 
 val (pp, popts) = RandomForest.predictor(trees.map(_.model), test)
-pp.predict
 
+println("Sample ftrees dims: %s" format trees(1).model.asInstanceOf[RandomForest].ftrees.dims)
+println("Predictor ftrees dims: %s" format pp.model.asInstanceOf[RandomForest].ftrees.dims)
+
+pp.predict
 val preds = pp.preds(0)
 
 val accuracy = FMat(sum(preds == tcat))(0,0) / preds.size
