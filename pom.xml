@@ -6,7 +6,7 @@
   <groupId>BIDMach</groupId>
   <artifactId>BIDMachSpark</artifactId>
   <packaging>jar</packaging>
-  <version>1.1.0-cuda7.5</version>
+  <version>1.1.1-cuda8.0</version>
   <name>BIDMachSpark</name>
   <description>Run BIDMach on Spark</description>
   <properties>

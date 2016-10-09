@@ -1,0 +1,34 @@
+import BIDMat.FMat
+import BIDMat.ND
+import BIDMat.MatIO
+import BIDMat.HDFSIO
+import BIDMat.MatFunctions._
+
+val masterIP = java.net.InetAddress.getLocalHost.getHostAddress
+val ddir = "/mnt/BIDMach/data/criteo/parts/"
+val hdfsdir = "hdfs://" + masterIP + ":9000/criteo/"
+
+val hdfsio = new HDFSIO
+
+val totalNumParts = 92
+//for (i <- 0 until totalNumParts) {
+//    val mats = new Array[ND](2)
+//    mats(0) = loadSMat(ddir+"trainsorted%02d.smat.lz4" format i)
+//    mats(1) = loadFMat(ddir+"trainlabel%02d.fmat.lz4" format i)
+//    hdfsio.writeMats(hdfsdir+("parts/paired%02d.lz4" format i), mats, 2)
+//    println("%d / %d parts merged" format (i+1, totalNumParts))
+//}
+println("done merging parts...")
+
+def mergeParts(numParts:Int, mergedName:String) = {
+  println("combining %d parts..." format numParts)
+  hdfsio.appendFiles((0 until numParts).map(i =>
+      (hdfsdir+"parts/paired%02d.lz4" format i)).toList, hdfsdir+mergedName, 2)
+}
+
+mergeParts(totalNumParts, "criteo_merged_82.lz4")
+mergeParts(40, "criteo_merged_40.lz4")
+mergeParts(20, "criteo_merged_20.lz4")
+mergeParts(10, "criteo_merged_10.lz4")
+
+println("done")

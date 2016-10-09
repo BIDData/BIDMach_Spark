@@ -1,0 +1,31 @@
+import BIDMat.FMat
+import BIDMat.ND
+import BIDMat.MatIO
+import BIDMat.HDFSIO
+import BIDMat.MatFunctions._
+
+val masterIP = java.net.InetAddress.getLocalHost.getHostAddress
+val prefix = "hdfs://" + masterIP + ":9000/BIDMach_MNIST/"
+
+val hdfsio = new HDFSIO
+
+for (i <- 0 until 800) {
+    val mats = new Array[ND](2)
+    mats(0) = loadFMat("/opt/BIDMach/data/MNIST8M/parts_fine/data%03d.fmat.lz4" format i)
+    mats(1) = loadFMat("/opt/BIDMach/data/MNIST8M/parts_fine/cat_onehot%03d.fmat.lz4" format i)
+    hdfsio.writeMats(prefix + ("parts_fine/glm_mats%03d.lz4" format i), mats, 2);
+    println("%d / 800 parts loaded" format (i+1));
+}
+println("done generating parts...");
+
+println("combining 800 parts...");
+hdfsio.appendFiles((0 until 800).map(i => (prefix + "parts_fine/glm_mats%03d.lz4" format i)).toList, prefix + "glm_data_merged.lz4", 2);
+println("combining 400 parts...");
+hdfsio.appendFiles((0 until 400).map(i => (prefix + "parts_fine/glm_mats%03d.lz4" format i)).toList, prefix + "glm_data_merged_400.lz4", 2);
+println("combining 200 parts...");
+hdfsio.appendFiles((0 until 200).map(i => (prefix + "parts_fine/glm_mats%03d.lz4" format i)).toList, prefix + "glm_data_merged_200.lz4", 2);
+println("combining 100 parts...");
+hdfsio.appendFiles((0 until 100).map(i => (prefix + "parts_fine/glm_mats%03d.lz4" format i)).toList, prefix + "glm_data_merged_100.lz4", 2);
+println();
+
+println("done");

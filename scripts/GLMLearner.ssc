@@ -1,0 +1,74 @@
+import org.apache.spark.rdd.RDD
+import scala.reflect.ClassTag
+import BIDMat.FMat
+import BIDMat.MatIO
+import BIDMat.MatFunctions._
+import BIDMat.SciFunctions._
+import BIDMat.Solvers._
+import BIDMach.RunOnSpark._
+import BIDMach.RunOnSparkGLM._
+import BIDMach.Learner
+import BIDMach.models.GLM
+import org.apache.hadoop.io.Text
+import org.apache.spark.HashPartitioner
+import org.apache.spark.storage.StorageLevel
+
+// Specify IP address of master here
+val MASTER_DNS = java.net.InetAddress.getLocalHost.getHostAddress
+val numExecutors = 2
+
+val rddData = sc.sequenceFile(
+   "hdfs://%s:9000/BIDMach_MNIST/glm_data_merged_100.lz4".format(MASTER_DNS),
+   classOf[Text],
+   classOf[BIDMat.MatIO]
+).partitionBy(new HashPartitioner(numExecutors)).persist(StorageLevel.MEMORY_AND_DISK)
+
+val (learner, opts) = GLM.learner()
+opts.useGPU = true;
+opts.featType = 1;
+opts.links = 2*iones(10,1);
+opts.targets = mkdiag(ones(10,1)) \ zeros(10, 784);
+opts.rmask = zeros(1,10) \ ones(1, 784);
+
+opts.batchSize = 500;
+opts.npasses = 5;
+opts.lrate = 0.001;  // for logistic
+
+def time[R](block: => R):R = {
+    val t0 = System.nanoTime()
+    val result = block
+    val t1 = System.nanoTime()
+    println("Elapsed time: " + (t1 - t0)/math.pow(10, 9)+ "s")
+    result
+}
+val result = time {runOnSparkGLM(sc, learner, rddData, numExecutors)}
+
+//
+//println("done training")
+//
+//val randPartNum = scala.util.Random.nextInt(80)
+//
+//var test = loadFMat("/opt/BIDMach/data/MNIST8M/parts/data%02d.fmat.lz4" format randPartNum)
+//val tcats = loadFMat("/opt/BIDMach/data/MNIST8M/parts/cats%02d.fmat.lz4" format randPartNum)
+//val tcat = maxi2(tcats, 1)._2
+
+// val pmodel = new GLM(new GLM.PredOptions());
+// pmodel.copyFrom(nn.model);
+// val popts = pmodel.opts.asInstanceOf[GLM.Opts]
+// popts.targmap = opts.targmap;
+// popts.links = opts.links;
+// popts.targets = null
+// popts.iweight = opts.iweight;
+// popts.lim = opts.lim;
+// popts.hashFeatures = opts.hashFeatures;
+// popts.hashBound1 = opts.hashBound1;
+// popts.hashBound2 = opts.hashBound2;
+//
+// val (pp, popts) = GLM.predictor(pmodel, test)
+// pp.predict
+//
+// val preds = FMat(pp.preds(0))
+//
+// val rocs = roc2(preds, tcats, 1-tcats, 100)
+//
+// println("Training AUCs:\n%s" format ((0 to 9) on mean(rocs)))

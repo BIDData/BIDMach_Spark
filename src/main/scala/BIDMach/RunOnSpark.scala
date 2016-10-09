@@ -96,7 +96,7 @@ object RunOnSpark{
     learner.model.copyFrom(l.model)
     if (learner.useGPU) {
       resetGPUs
-      for (i<- 0 until learner.model.updatemats.length) {
+      for (i <- 0 until learner.model.updatemats.length) {
         learner.model.updatemats(i) = learner.model.convertMat(learner.model.updatemats(i))
       }
     }
