@@ -157,11 +157,16 @@ object RunOnSpark{
     rdd_learner.collect()
   }
 
-  // Instantiates a learner based on the parameters of the learner that is passed in and binds the data to the new learner.
-  def firstPassRF(l: Learner)(rdd_data:Iterator[(Text, BIDMat.MatIO)]):Iterator[Learner] = {
-    // TODO: maybe move this into the learner?
-    if (!rdd_data.hasNext) return Iterator[Learner](null) // if this chunk is empty, skip this learner altogether
+  def runMap[A:ClassTag, V:ClassTag](
+    sc:SparkContext, f:(Iterator[A], Iterator[B]) => Iterator[V],
+    preservesPartitioning:Boolean = true) = {
 
+    val zipJob = rdd.mapPartitions(rddB, preservesPartitioning)(f).persist()
+    sc.runJob(zipJob, (iter:Iterator[_]) => {})
+  }
+
+  // Instantiates a learner based on the parameters of the learner that is passed in and binds the data to the new learner.
+  def firstPassRF(protoLearner:Broadcast[Learner], dataset:Broadcast[Map[(Text, MatIO)]])(workerIdx:Int):Learner = {
     import BIDMat.{CMat,CSMat,DMat,Dict,FMat,FND,GMat,GDMat,GIMat,GLMat,GSMat,GSDMat,GND,HMat,IDict,Image,IMat,LMat,Mat,SMat,SBMat,SDMat}
     import BIDMat.MatFunctions._
     import BIDMat.SciFunctions._
@@ -179,8 +184,11 @@ object RunOnSpark{
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
 
+    val data_iter:Iterator[(Text, MatIO)] = dataset.value.entrySet().iterator();
+
+    val l = protoLearner.value
     val i_opts = new IteratorSource.Options
-    i_opts.iter = rdd_data
+    i_opts.iter = data_iter
     val iteratorSource = new IteratorSource(i_opts)
     val learner = new Learner(iteratorSource, l.model, l.mixins, l.updater, l.datasink, l.opts)
     learner.init
@@ -195,14 +203,11 @@ object RunOnSpark{
     println("Learner: " + SizeEstimator.estimate(learner));
     println(learner.model.asInstanceOf[BIDMach.models.RandomForest].ftrees);
 
-    Iterator[Learner](learner)
+    learner
   }
 
 
-  def nextPassRF(ipass:Int)(data_iterator:Iterator[(Text, BIDMat.MatIO)], learner_iterator:Iterator[Learner]):Iterator[Learner] = {
-    val learner = learner_iterator.next
-    if (learner == null) return Iterator(null) // Skip this learner because we know this chunk is empty from firstPass
-
+  def nextPassRF(ipass:Int, dataset:Broadcast[Map[(Text, MatIO)]])(learner:Learner):Learner = {
     import BIDMat.{CMat,CSMat,DMat,Dict,FMat,FND,GMat,GDMat,GIMat,GLMat,GSMat,GSDMat,GND,HMat,IDict,Image,IMat,LMat,Mat,SMat,SBMat,SDMat}
     import BIDMat.MatFunctions._
     import BIDMat.SciFunctions._
@@ -220,7 +225,8 @@ object RunOnSpark{
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
 
-    learner.datasource.asInstanceOf[IteratorSource].opts.iter = data_iterator
+    val data_iter:Iterator[(Text, MatIO)] = dataset.value.entrySet().iterator();
+    learner.datasource.asInstanceOf[IteratorSource].opts.iter = data_iter
     learner.datasource.init
     learner.model.bind(learner.datasource)
 
@@ -234,31 +240,44 @@ object RunOnSpark{
     println("Learner: " + SizeEstimator.estimate(learner));
     println(learner.model.asInstanceOf[BIDMach.models.RandomForest].ftrees);
 
-    return Iterator(learner)
+    learner
   }
 
-  def runOnSparkRF(sc: SparkContext, learner:Learner, rddData:RDD[(Text,MatIO)], numPartitions: Int):Array[Learner] = {
+  def runOnSparkRF(sc: SparkContext, protoLearner:Learner, dataset:RDD[(Text,MatIO)],
+                   numExecutors: Int):Array[Learner] = {
     // Instantiate a learner, run the first pass, and reduce all of the learners' models into one learner.
     Mat.checkMKL(true)
     Mat.hasCUDA = 0
     Mat.checkCUDA(true)
-    var rddLearner:RDD[Learner] = rddData.mapPartitions[Learner](
-      firstPassRF(learner), preservesPartitioning=true).persist()
+
+    val bcData = sc.broadcast(dataset.collectAsMap())
+    val bcProtoLearner = sc.broadcast(protoLearner)
+
+    var rddLearner:RDD[Learner] = sc
+      .parallelize(0 until numExecutors)
+      .map(firstPassRF(bcProtoLearner, bcData))
+      .cache()
+
+    var tStart = System.nanoTime()
+    sc.runJob(rddLearner, (iter:Iterator[_]) => {})
+    println("Elapsed time iter 0: " + (System.nanoTime() - tStart)/math.pow(10, 9)+ "s")
 
     for (i <- 1 until learner.opts.npasses) {
       // Call nextPass on each learner and reduce the learners into one learner
-      val t0 = System.nanoTime()
+      val tStart = System.nanoTime()
 
-      val newRddLearner = rddData.zipPartitions(rddLearner, true)(
-        nextPassRF(i)).persist()
+      val newRddLearner = rddData
+        .mapPartitions(rddLearner, true)(nextPassRF(i))
+        .cache()
 
       rddLearner = newRddLearner
 
-      val t1 = System.nanoTime()
-      println("Elapsed time iter " + i + ": " + (t1 - t0)/math.pow(10, 9)+ "s")
+      tStart = System.nanoTime()
+      sc.runJob(rddLearner, (iter:Iterator[_]) => {})
+      println("Elapsed time iter " + i + ": " + (tStart - System.nanoTime())/math.pow(10, 9)+ "s")
     }
 
-    rddLearner.collect().filter(_ != null) // filter null learners (resulting from empty partitions)
+    rddLearner.collect()
   }
 
 }

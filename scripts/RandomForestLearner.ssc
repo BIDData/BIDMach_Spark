@@ -16,10 +16,10 @@ import org.apache.spark.storage.StorageLevel
 val MASTER_DNS = java.net.InetAddress.getLocalHost.getHostAddress
 val num_executors = 4
 
-val rdd_data = sc.sequenceFile("hdfs://%s:9000/BIDMach_MNIST/rf_data_imat_merged_40.fmat.lz4".format(MASTER_DNS),
-                               classOf[Text],
-			       classOf[BIDMat.MatIO]
-			      ).partitionBy(new HashPartitioner(num_executors)).persist(StorageLevel.MEMORY_AND_DISK)
+val rdd_data = sc.sequenceFile(
+    "hdfs://%s:9000/BIDMach_MNIST/rf_data_imat_merged_40.fmat.lz4".format(MASTER_DNS),
+    classOf[Text],
+    classOf[BIDMat.MatIO])
 
 val (learner, opts) = RandomForest.learner()
 opts.useGPU = true
